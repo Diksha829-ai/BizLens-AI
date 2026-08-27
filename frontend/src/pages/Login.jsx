@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import "../styles/auth.css";
+
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -46,60 +48,246 @@ function Login() {
 
       alert("Login successful!");
 
-      // Redirect to dashboard
       navigate("/dashboard");
     } catch (error) {
       console.error("Login error:", error);
-      alert("Unable to connect to the backend");
+
+      alert(
+        "Unable to connect to the backend"
+      );
     }
   };
 
   return (
-    <div>
-      <h1>BizLens-AI Login</h1>
+    <div className="auth-page">
 
-      <form onSubmit={handleLogin}>
-        <div>
-          <label>Email</label>
-          <br />
+      {/* LEFT SIDE */}
 
-          <input
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+      <div className="auth-brand">
+
+        <div className="auth-brand-content">
+
+          <div className="auth-logo">
+            <div className="auth-logo-icon">
+              B
+            </div>
+
+            <div>
+              <div className="auth-logo-name">
+                BizLens
+              </div>
+
+              <div className="auth-logo-ai">
+                AI
+              </div>
+            </div>
+          </div>
+
+          <div className="auth-brand-text">
+
+            <div className="auth-badge">
+              ✨ AI-Powered Location Intelligence
+            </div>
+
+            <h1>
+              Make smarter
+              <br />
+              business decisions.
+            </h1>
+
+            <p>
+              Analyze competition, demand,
+              accessibility and location factors
+              before investing in your next business.
+            </p>
+
+          </div>
+
+          <div className="auth-features">
+
+            <div className="auth-feature">
+              <span>📍</span>
+              <div>
+                <strong>
+                  Location Intelligence
+                </strong>
+
+                <small>
+                  Analyze any business location
+                </small>
+              </div>
+            </div>
+
+            <div className="auth-feature">
+              <span>📊</span>
+              <div>
+                <strong>
+                  Business Analytics
+                </strong>
+
+                <small>
+                  Understand demand and competition
+                </small>
+              </div>
+            </div>
+
+            <div className="auth-feature">
+              <span>🤖</span>
+              <div>
+                <strong>
+                  AI Recommendations
+                </strong>
+
+                <small>
+                  Get data-driven business insights
+                </small>
+              </div>
+            </div>
+
+          </div>
+
         </div>
 
-        <br />
+      </div>
 
-        <div>
-          <label>Password</label>
-          <br />
 
-          <input
-            type="password"
-            placeholder="Enter your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+      {/* RIGHT SIDE */}
+
+      <div className="auth-form-section">
+
+        <div className="auth-form-container">
+
+          {/* MOBILE LOGO */}
+
+          <div className="auth-mobile-logo">
+
+            <div className="auth-logo-icon">
+              B
+            </div>
+
+            <div>
+              <div className="auth-logo-name">
+                BizLens
+              </div>
+
+              <div className="auth-logo-ai">
+                AI
+              </div>
+            </div>
+
+          </div>
+
+
+          {/* FORM HEADER */}
+
+          <div className="auth-form-header">
+
+            <h2>
+              Welcome back
+            </h2>
+
+            <p>
+              Sign in to continue to BizLens-AI
+            </p>
+
+          </div>
+
+
+          {/* LOGIN FORM */}
+
+          <form
+            className="auth-form"
+            onSubmit={handleLogin}
+          >
+
+            {/* EMAIL */}
+
+            <div className="auth-input-group">
+
+              <label htmlFor="email">
+                Email Address
+              </label>
+
+              <input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) =>
+                  setEmail(e.target.value)
+                }
+                required
+              />
+
+            </div>
+
+
+            {/* PASSWORD */}
+
+            <div className="auth-input-group">
+
+              <label htmlFor="password">
+                Password
+              </label>
+
+              <input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) =>
+                  setPassword(e.target.value)
+                }
+                required
+              />
+
+            </div>
+
+
+            {/* LOGIN BUTTON */}
+
+            <button
+              className="auth-submit-button"
+              type="submit"
+            >
+              Sign In
+              <span>→</span>
+            </button>
+
+          </form>
+
+
+          {/* REGISTER */}
+
+          <div className="auth-switch">
+
+            <span>
+              Don't have an account?
+            </span>
+
+            <Link to="/register">
+              Create an account
+            </Link>
+
+          </div>
+
+
+          {/* BACK TO DASHBOARD */}
+
+          <button
+            className="auth-back-button"
+            type="button"
+            onClick={() =>
+              navigate("/dashboard")
+            }
+          >
+            ← Continue without signing in
+          </button>
+
         </div>
 
-        <br />
+      </div>
 
-        <button type="submit">
-          Login
-        </button>
-      </form>
-
-      <p>
-        Don't have an account?{" "}
-        <Link to="/register">
-          Register
-        </Link>
-      </p>
     </div>
   );
 }

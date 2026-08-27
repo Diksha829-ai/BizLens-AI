@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import {
   MapContainer,
@@ -11,6 +12,10 @@ import {
 
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+
+import "../styles/variables.css";
+import "../styles/components.css";
+import "../styles/analysis.css";
 
 // ============================================================
 // FIX LEAFLET MARKER ICON
@@ -30,33 +35,17 @@ L.Icon.Default.mergeOptions({
 });
 
 // ============================================================
-// MAP CENTER
+// MAP UPDATER
 // ============================================================
 
-function MapUpdater({
-  latitude,
-  longitude,
-}) {
+function MapUpdater({ latitude, longitude }) {
   const map = useMap();
 
   useEffect(() => {
-    if (
-      latitude !== null &&
-      longitude !== null
-    ) {
-      map.setView(
-        [
-          latitude,
-          longitude,
-        ],
-        14
-      );
+    if (latitude !== null && longitude !== null) {
+      map.setView([latitude, longitude], 14);
     }
-  }, [
-    latitude,
-    longitude,
-    map,
-  ]);
+  }, [latitude, longitude, map]);
 
   return null;
 }
@@ -80,155 +69,81 @@ const CATEGORY_NAMES = {
 // ============================================================
 
 function Analysis() {
+  const navigate = useNavigate();
+
   // ==========================================================
   // LOCATION
   // ==========================================================
 
-  const [latitude, setLatitude] =
-    useState(null);
-
-  const [longitude, setLongitude] =
-    useState(null);
-
-  const [address, setAddress] =
-    useState("");
+  const [latitude, setLatitude] = useState(null);
+  const [longitude, setLongitude] = useState(null);
+  const [address, setAddress] = useState("");
 
   // ==========================================================
   // BUSINESS
   // ==========================================================
 
-  const [radius, setRadius] =
-    useState(3);
-
-  const [category, setCategory] =
-    useState(null);
+  const [radius, setRadius] = useState(3);
+  const [category, setCategory] = useState(null);
 
   // ==========================================================
   // ANALYSIS
   // ==========================================================
 
-  const [analysisData, setAnalysisData] =
-    useState(null);
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
+  const [analysisData, setAnalysisData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   // ==========================================================
-  // LOAD CURRENT LOCATION + CATEGORY
+  // LOAD SAVED DATA
   // ==========================================================
 
   useEffect(() => {
     try {
-      // ------------------------------------------------------
-      // LOCATION
-      // ------------------------------------------------------
-
       const savedLocation =
-        localStorage.getItem(
-          "selectedLocation"
-        );
-
-      // ------------------------------------------------------
-      // CATEGORY
-      // ------------------------------------------------------
+        localStorage.getItem("selectedLocation");
 
       const savedCategory =
-        localStorage.getItem(
-          "selectedCategory"
-        );
-
-      // ------------------------------------------------------
-      // RADIUS
-      // ------------------------------------------------------
+        localStorage.getItem("selectedCategory");
 
       const savedRadius =
-        localStorage.getItem(
-          "analysisRadius"
-        );
+        localStorage.getItem("analysisRadius");
 
-      console.log(
-        "======================================"
-      );
-
-      console.log(
-        "Analysis Page - Loading Data"
-      );
-
-      console.log(
-        "Selected Location:",
-        savedLocation
-      );
-
-      console.log(
-        "Selected Category:",
-        savedCategory
-      );
-
-      console.log(
-        "Selected Radius:",
-        savedRadius
-      );
-
-      console.log(
-        "======================================"
-      );
+      console.log("======================================");
+      console.log("Analysis Page - Loading Data");
+      console.log("Selected Location:", savedLocation);
+      console.log("Selected Category:", savedCategory);
+      console.log("Selected Radius:", savedRadius);
+      console.log("======================================");
 
       // ------------------------------------------------------
-      // CHECK LOCATION
+      // LOCATION
       // ------------------------------------------------------
 
       if (!savedLocation) {
         setError(
           "No location selected. Please go back and select a location."
         );
-
         return;
       }
 
-      const location =
-        JSON.parse(
-          savedLocation
-        );
+      const location = JSON.parse(savedLocation);
 
-      const selectedLatitude =
-        Number(
-          location.latitude
-        );
-
-      const selectedLongitude =
-        Number(
-          location.longitude
-        );
+      const selectedLatitude = Number(location.latitude);
+      const selectedLongitude = Number(location.longitude);
 
       if (
-        Number.isNaN(
-          selectedLatitude
-        ) ||
-        Number.isNaN(
-          selectedLongitude
-        )
+        Number.isNaN(selectedLatitude) ||
+        Number.isNaN(selectedLongitude)
       ) {
         setError(
           "Selected location coordinates are invalid."
         );
-
         return;
       }
 
-      // ------------------------------------------------------
-      // SET LOCATION
-      // ------------------------------------------------------
-
-      setLatitude(
-        selectedLatitude
-      );
-
-      setLongitude(
-        selectedLongitude
-      );
+      setLatitude(selectedLatitude);
+      setLongitude(selectedLongitude);
 
       setAddress(
         location.address ||
@@ -238,41 +153,27 @@ function Analysis() {
       );
 
       // ------------------------------------------------------
-      // CHECK CATEGORY
+      // CATEGORY
       // ------------------------------------------------------
 
       if (!savedCategory) {
         setError(
           "No business category selected. Please go back and select a business category."
         );
-
         return;
       }
 
-      // ------------------------------------------------------
-      // SET CATEGORY
-      // ------------------------------------------------------
-
-      setCategory(
-        savedCategory
-      );
+      setCategory(savedCategory);
 
       // ------------------------------------------------------
-      // SET RADIUS
+      // RADIUS
       // ------------------------------------------------------
 
       if (savedRadius) {
-        const parsedRadius =
-          Number(savedRadius);
+        const parsedRadius = Number(savedRadius);
 
-        if (
-          !Number.isNaN(
-            parsedRadius
-          )
-        ) {
-          setRadius(
-            parsedRadius
-          );
+        if (!Number.isNaN(parsedRadius)) {
+          setRadius(parsedRadius);
         }
       }
     } catch (error) {
@@ -291,13 +192,10 @@ function Analysis() {
   // ANALYZE LOCATION
   // ==========================================================
 
-  const handleAnalysis = async (
-    event
-  ) => {
+  const handleAnalysis = async (event) => {
     event.preventDefault();
 
     setError("");
-
     setAnalysisData(null);
 
     // ------------------------------------------------------
@@ -308,10 +206,7 @@ function Analysis() {
       latitude === null ||
       longitude === null
     ) {
-      setError(
-        "Please select a location first."
-      );
-
+      setError("Please select a location first.");
       return;
     }
 
@@ -323,7 +218,6 @@ function Analysis() {
       setError(
         "Business category is missing. Please go back and select a business category."
       );
-
       return;
     }
 
@@ -331,104 +225,83 @@ function Analysis() {
     // TOKEN
     // ------------------------------------------------------
 
-    const token =
-      localStorage.getItem(
-        "token"
-      );
+    const token = localStorage.getItem("token");
 
     if (!token) {
       setError(
         "Your login session has expired. Please login again."
       );
 
+      navigate("/login");
       return;
     }
 
     setLoading(true);
 
     try {
-      console.log(
-        "======================================"
-      );
+      console.log("======================================");
+      console.log("BizLens-AI Location Analysis");
+      console.log("======================================");
 
-      console.log(
-        "BizLens-AI Location Analysis"
-      );
-
-      console.log(
-        "======================================"
-      );
-
-      console.log(
-        "Latitude:",
-        latitude
-      );
-
-      console.log(
-        "Longitude:",
-        longitude
-      );
-
-      console.log(
-        "Address:",
-        address
-      );
-
-      console.log(
-        "Radius:",
-        radius
-      );
-
-      console.log(
-        "Category:",
-        category
-      );
+      console.log("Latitude:", latitude);
+      console.log("Longitude:", longitude);
+      console.log("Address:", address);
+      console.log("Radius:", radius);
+      console.log("Category:", category);
 
       // ------------------------------------------------------
       // API REQUEST
       // ------------------------------------------------------
 
-      const response =
-        await fetch(
-          "http://localhost:5000/api/analysis",
-          {
-            method: "POST",
+      const response = await fetch(
+        "http://localhost:5000/api/analysis",
+        {
+          method: "POST",
 
-            headers: {
-              "Content-Type":
-                "application/json",
+          headers: {
+            "Content-Type": "application/json",
 
-              Authorization:
-                `Bearer ${token}`,
-            },
+            Authorization: `Bearer ${token}`,
+          },
 
-            body: JSON.stringify({
-              latitude:
-                Number(latitude),
+          body: JSON.stringify({
+            latitude: Number(latitude),
+            longitude: Number(longitude),
+            radius: Number(radius),
+            category: category,
+          }),
+        }
+      );
 
-              longitude:
-                Number(longitude),
-
-              radius:
-                Number(radius),
-
-              category:
-                category,
-            }),
-          }
-        );
-
-      // ------------------------------------------------------
-      // RESPONSE
-      // ------------------------------------------------------
-
-      const data =
-        await response.json();
+      const data = await response.json();
 
       console.log(
         "Analysis response:",
         data
       );
+
+      // ------------------------------------------------------
+      // JWT EXPIRED
+      // ------------------------------------------------------
+
+      if (
+        response.status === 401 ||
+        response.status === 403
+      ) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+
+        setError(
+          "Your login session has expired. Please login again."
+        );
+
+        navigate("/login");
+        return;
+      }
+
+      // ------------------------------------------------------
+      // API ERROR
+      // ------------------------------------------------------
 
       if (!response.ok) {
         throw new Error(
@@ -441,15 +314,11 @@ function Analysis() {
       // SAVE RESULT
       // ------------------------------------------------------
 
-      setAnalysisData(
-        data.data
-      );
+      setAnalysisData(data.data);
 
       localStorage.setItem(
         "analysisResult",
-        JSON.stringify(
-          data.data
-        )
+        JSON.stringify(data.data)
       );
 
       console.log(
@@ -480,51 +349,51 @@ function Analysis() {
     category === null
   ) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          padding: "40px",
-          fontFamily:
-            "Arial, sans-serif",
-        }}
-      >
-        <h1>
-          BizLens-AI
-        </h1>
+      <div className="analysis-error-page">
 
-        <h2>
-          Location Analysis
-        </h2>
+        <div className="analysis-error-card">
 
-        <div
-          style={{
-            padding: "20px",
-            borderRadius: "10px",
-            background:
-              "#fee2e2",
-            color:
-              "#991b1b",
-            marginTop: "20px",
-          }}
-        >
-          {error ||
-            "Loading selected analysis information..."}
+          <div className="analysis-brand">
+            <div className="analysis-logo">
+              B
+            </div>
+
+            <div>
+              <strong>
+                BizLens
+              </strong>
+
+              <span>
+                AI
+              </span>
+            </div>
+          </div>
+
+          <div className="error-icon">
+            ⚠️
+          </div>
+
+          <h1>
+            Analysis Information Missing
+          </h1>
+
+          <p>
+            {error ||
+              "Loading selected analysis information..."}
+          </p>
+
+          <button
+            type="button"
+            onClick={() =>
+              navigate("/dashboard")
+            }
+            className="analysis-primary-button"
+          >
+            ← Back to Dashboard
+          </button>
+
         </div>
 
-        <button
-          onClick={() =>
-            window.history.back()
-          }
-          style={{
-            marginTop: "20px",
-            padding:
-              "10px 20px",
-            cursor:
-              "pointer",
-          }}
-        >
-          ← Go Back
-        </button>
       </div>
     );
   }
@@ -534,8 +403,7 @@ function Analysis() {
   // ==========================================================
 
   const businessSuccess =
-    analysisData
-      ?.businessSuccess;
+    analysisData?.businessSuccess;
 
   const demand =
     analysisData?.demand;
@@ -544,829 +412,1027 @@ function Analysis() {
     analysisData?.competitors;
 
   const accessibility =
-    analysisData
-      ?.accessibility;
+    analysisData?.accessibility;
 
   const risk =
     analysisData?.risk;
+
+  const categoryDisplay =
+    CATEGORY_NAMES[category] ||
+    category;
 
   // ==========================================================
   // RENDER
   // ==========================================================
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background:
-          "#f5f7fb",
-        padding: "25px",
-        fontFamily:
-          "Arial, sans-serif",
-      }}
-    >
-      {/* =====================================================
-          HEADER
-      ====================================================== */}
+    <div className="analysis-page">
 
-      <div
-        style={{
-          maxWidth:
-            "1200px",
-          margin:
-            "0 auto 25px",
-        }}
-      >
-        <h1>
-          BizLens-AI
-        </h1>
+      {/* ====================================================
+          TOP HEADER
+      ==================================================== */}
 
-        <p>
-          AI-Powered Business
-          Location Intelligence
-        </p>
-      </div>
+      <header className="analysis-header">
 
-      {/* =====================================================
-          SELECTED LOCATION
-      ====================================================== */}
+        <div className="analysis-header-inner">
 
-      <div
-        style={{
-          maxWidth:
-            "1200px",
-          margin:
-            "0 auto 20px",
-          padding: "20px",
-          background:
-            "white",
-          borderRadius:
-            "12px",
-          boxShadow:
-            "0 2px 10px rgba(0,0,0,0.08)",
-        }}
-      >
-        <h2>
-          Selected Location
-        </h2>
+          <div className="analysis-brand">
 
-        <p>
-          <strong>
-            Address:
-          </strong>{" "}
-          {address}
-        </p>
+            <div className="analysis-logo">
+              B
+            </div>
 
-        <p>
-          <strong>
-            Latitude:
-          </strong>{" "}
-          {latitude.toFixed(
-            6
-          )}
-        </p>
+            <div className="analysis-brand-text">
 
-        <p>
-          <strong>
-            Longitude:
-          </strong>{" "}
-          {longitude.toFixed(
-            6
-          )}
-        </p>
+              <strong>
+                BizLens
+              </strong>
 
-        <p>
-          <strong>
-            Business Category:
-          </strong>{" "}
-          {
-            CATEGORY_NAMES[
-              category
-            ] || category
-          }
-        </p>
-      </div>
+              <span>
+                AI
+              </span>
 
-      {/* =====================================================
-          MAP
-      ====================================================== */}
+            </div>
 
-      <div
-        style={{
-          maxWidth:
-            "1200px",
-          margin:
-            "0 auto 25px",
-          background:
-            "white",
-          padding: "15px",
-          borderRadius:
-            "12px",
-          boxShadow:
-            "0 2px 10px rgba(0,0,0,0.08)",
-        }}
-      >
-        <h2>
-          Analysis Map
-        </h2>
+          </div>
 
-        <p
-          style={{
-            color: "#6b7280",
-          }}
-        >
-          The map is centered on your
-          selected business location.
-        </p>
+          <div className="analysis-header-center">
 
-        <div
-          style={{
-            height:
-              "450px",
-            width: "100%",
-          }}
-        >
-          <MapContainer
-            center={[
-              latitude,
-              longitude,
-            ]}
-            zoom={14}
-            scrollWheelZoom={
-              true
+            <span>
+              BUSINESS LOCATION INTELLIGENCE
+            </span>
+
+            <h1>
+              Location Analysis
+            </h1>
+
+          </div>
+
+          <button
+            type="button"
+            className="back-dashboard-button"
+            onClick={() =>
+              navigate("/dashboard")
             }
-            style={{
-              height: "100%",
-              width: "100%",
-              borderRadius:
-                "10px",
-            }}
           >
-            <TileLayer
-              attribution='&copy; OpenStreetMap contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
+            ← Dashboard
+          </button>
 
-            <MapUpdater
-              latitude={
-                latitude
-              }
-              longitude={
-                longitude
-              }
-            />
+        </div>
 
-            <Marker
-              position={[
-                latitude,
-                longitude,
-              ]}
-            >
-              <Popup>
-                <strong>
-                  📍 Selected Business
-                  Location
-                </strong>
+      </header>
 
-                <br />
 
-                {address}
+      {/* ====================================================
+          MAIN
+      ==================================================== */}
 
-                <br />
+      <main className="analysis-main">
 
-                <br />
+        {/* ==================================================
+            PAGE INTRO
+        ================================================== */}
 
-                Business:{" "}
-                {
-                  CATEGORY_NAMES[
-                    category
-                  ] || category
-                }
+        <section className="analysis-intro">
 
-                <br />
+          <div>
 
-                Latitude:{" "}
-                {latitude}
+            <span className="analysis-page-badge">
+              ✨ AI-Powered Analysis
+            </span>
 
-                <br />
+            <h2>
+              Business Location Intelligence
+            </h2>
 
-                Longitude:{" "}
-                {longitude}
-              </Popup>
-            </Marker>
+            <p>
+              Evaluate the potential of your selected
+              location using competition, demand,
+              accessibility and risk indicators.
+            </p>
 
-            <Circle
+          </div>
+
+          <div className="analysis-status">
+
+            <span className="status-dot"></span>
+
+            Ready for Analysis
+
+          </div>
+
+        </section>
+
+
+        {/* ==================================================
+            LOCATION SUMMARY
+        ================================================== */}
+
+        <section className="location-summary-card">
+
+          <div className="location-summary-top">
+
+            <div>
+
+              <span className="section-label">
+                SELECTED LOCATION
+              </span>
+
+              <h2>
+                📍 {address}
+              </h2>
+
+            </div>
+
+            <div className="category-pill">
+              🏪 {categoryDisplay}
+            </div>
+
+          </div>
+
+          <div className="location-meta">
+
+            <div className="location-meta-item">
+
+              <span>
+                Latitude
+              </span>
+
+              <strong>
+                {latitude.toFixed(6)}
+              </strong>
+
+            </div>
+
+            <div className="location-meta-item">
+
+              <span>
+                Longitude
+              </span>
+
+              <strong>
+                {longitude.toFixed(6)}
+              </strong>
+
+            </div>
+
+            <div className="location-meta-item">
+
+              <span>
+                Business
+              </span>
+
+              <strong>
+                {categoryDisplay}
+              </strong>
+
+            </div>
+
+            <div className="location-meta-item">
+
+              <span>
+                Analysis Radius
+              </span>
+
+              <strong>
+                {radius} km
+              </strong>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        {/* ==================================================
+            MAP
+        ================================================== */}
+
+        <section className="analysis-card map-card">
+
+          <div className="card-header">
+
+            <div>
+
+              <span className="section-label">
+                GEOSPATIAL ANALYSIS
+              </span>
+
+              <h2>
+                Analysis Map
+              </h2>
+
+              <p>
+                Explore the selected location and
+                analysis radius.
+              </p>
+
+            </div>
+
+            <div className="map-radius-badge">
+              ◯ {radius} km radius
+            </div>
+
+          </div>
+
+          <div className="analysis-map-container">
+
+            <MapContainer
               center={[
                 latitude,
                 longitude,
               ]}
-              radius={
-                Number(radius) *
-                1000
-              }
-              pathOptions={{
-                fillOpacity:
-                  0.15,
-              }}
-            />
-          </MapContainer>
-        </div>
-      </div>
+              zoom={14}
+              scrollWheelZoom={true}
+              className="analysis-map"
+            >
 
-      {/* =====================================================
-          ANALYSIS FORM
-      ====================================================== */}
+              <TileLayer
+                attribution="&copy; OpenStreetMap contributors"
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
 
-      <div
-        style={{
-          maxWidth:
-            "1200px",
-          margin:
-            "0 auto 25px",
-          padding: "20px",
-          background:
-            "white",
-          borderRadius:
-            "12px",
-          boxShadow:
-            "0 2px 10px rgba(0,0,0,0.08)",
-        }}
-      >
-        <h2>
-          Business Analysis
-        </h2>
+              <MapUpdater
+                latitude={latitude}
+                longitude={longitude}
+              />
 
-        <form
-          onSubmit={
-            handleAnalysis
-          }
-        >
-          <div
-            style={{
-              display:
-                "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: "15px",
-            }}
-          >
-            {/* RADIUS */}
+              <Marker
+                position={[
+                  latitude,
+                  longitude,
+                ]}
+              >
+
+                <Popup>
+
+                  <strong>
+                    📍 Selected Business Location
+                  </strong>
+
+                  <br />
+
+                  {address}
+
+                  <br />
+                  <br />
+
+                  Business:{" "}
+                  {categoryDisplay}
+
+                  <br />
+
+                  Radius: {radius} km
+
+                </Popup>
+
+              </Marker>
+
+              <Circle
+                center={[
+                  latitude,
+                  longitude,
+                ]}
+                radius={
+                  Number(radius) * 1000
+                }
+                pathOptions={{
+                  fillOpacity: 0.15,
+                }}
+              />
+
+            </MapContainer>
+
+          </div>
+
+          <div className="map-footer">
+
+            <span>
+              📍 Selected location
+            </span>
+
+            <span>
+              ⭕ Analysis coverage area
+            </span>
+
+            <span>
+              🗺️ OpenStreetMap data
+            </span>
+
+          </div>
+
+        </section>
+
+
+        {/* ==================================================
+            ANALYSIS CONTROL
+        ================================================== */}
+
+        <section className="analysis-card control-card">
+
+          <div className="card-header">
 
             <div>
-              <label>
-                <strong>
-                  Radius (km)
-                </strong>
-              </label>
 
-              <br />
+              <span className="section-label">
+                ANALYSIS CONFIGURATION
+              </span>
 
-              <select
-                value={radius}
-                onChange={(e) =>
-                  setRadius(
-                    Number(
-                      e.target
-                        .value
-                    )
-                  )
-                }
-                style={{
-                  width:
-                    "100%",
-                  padding:
-                    "10px",
-                  marginTop:
-                    "5px",
-                }}
-              >
-                <option
-                  value={2}
-                >
-                  2 km
-                </option>
+              <h2>
+                Configure Analysis
+              </h2>
 
-                <option
-                  value={3}
-                >
-                  3 km
-                </option>
+              <p>
+                Choose the analysis radius before
+                generating location insights.
+              </p>
 
-                <option
-                  value={4}
-                >
-                  4 km
-                </option>
-
-                <option
-                  value={5}
-                >
-                  5 km
-                </option>
-              </select>
             </div>
 
-            {/* BUSINESS CATEGORY */}
+          </div>
 
-            <div>
-              <label>
-                <strong>
-                  Business Category
-                </strong>
-              </label>
+          <form
+            onSubmit={handleAnalysis}
+            className="analysis-form"
+          >
 
-              <div
-                style={{
-                  marginTop:
-                    "5px",
-                  padding:
-                    "10px",
-                  background:
-                    "#f3f4f6",
-                  border:
-                    "1px solid #d1d5db",
-                  borderRadius:
-                    "6px",
-                  fontWeight:
-                    "600",
-                }}
-              >
-                {
-                  CATEGORY_NAMES[
-                    category
-                  ] || category
-                }
+            <div className="analysis-form-grid">
+
+              {/* RADIUS */}
+
+              <div className="form-field">
+
+                <label>
+                  Analysis Radius
+                </label>
+
+                <select
+                  value={radius}
+                  onChange={(e) =>
+                    setRadius(
+                      Number(e.target.value)
+                    )
+                  }
+                >
+
+                  <option value={2}>
+                    2 km
+                  </option>
+
+                  <option value={3}>
+                    3 km
+                  </option>
+
+                  <option value={4}>
+                    4 km
+                  </option>
+
+                  <option value={5}>
+                    5 km
+                  </option>
+
+                </select>
+
+                <small>
+                  Area around the selected location
+                  that will be analyzed.
+                </small>
+
               </div>
 
-              <small
-                style={{
-                  color:
-                    "#6b7280",
-                }}
-              >
-                Selected from the
-                previous step
-              </small>
-            </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={
-              loading
-            }
-            style={{
-              marginTop:
-                "20px",
-              padding:
-                "12px 25px",
-              border: "none",
-              borderRadius:
-                "8px",
-              cursor:
-                loading
-                  ? "not-allowed"
-                  : "pointer",
-              background:
-                "#2563eb",
-              color:
-                "white",
-              fontWeight:
-                "600",
-            }}
-          >
-            {loading
-              ? "Analyzing..."
-              : "Analyze Location"}
-          </button>
-        </form>
+              {/* BUSINESS */}
 
-        {error && (
-          <div
-            style={{
-              marginTop:
-                "20px",
-              padding:
-                "15px",
-              borderRadius:
-                "8px",
-              background:
-                "#fee2e2",
-              color:
-                "#991b1b",
-            }}
-          >
-            {error}
-          </div>
-        )}
-      </div>
+              <div className="form-field">
 
-      {/* =====================================================
-          ANALYSIS RESULTS
-      ====================================================== */}
+                <label>
+                  Business Category
+                </label>
 
-      {analysisData && (
-        <div
-          style={{
-            maxWidth:
-              "1200px",
-            margin:
-              "0 auto",
-          }}
-        >
-          <h2>
-            Analysis Results
-          </h2>
+                <div className="category-display">
 
-          {/* SUCCESS SCORE */}
+                  <span>
+                    {categoryDisplay}
+                  </span>
 
-          <div
-            style={{
-              background:
-                "white",
-              padding:
-                "25px",
-              borderRadius:
-                "12px",
-              textAlign:
-                "center",
-              marginBottom:
-                "20px",
-              boxShadow:
-                "0 2px 10px rgba(0,0,0,0.08)",
-            }}
-          >
-            <h3>
-              Business Success Score
-            </h3>
+                  <span>
+                    ✓ Selected
+                  </span>
 
-            <div
-              style={{
-                fontSize:
-                  "60px",
-                fontWeight:
-                  "bold",
-              }}
-            >
-              {businessSuccess?.score ??
-                0}
-              %
+                </div>
+
+                <small>
+                  Selected from the previous step.
+                </small>
+
+              </div>
+
+
+              {/* LOCATION */}
+
+              <div className="form-field">
+
+                <label>
+                  Location
+                </label>
+
+                <div className="location-display">
+                  📍 {address}
+                </div>
+
+                <small>
+                  Current selected business location.
+                </small>
+
+              </div>
+
             </div>
 
-            <p>
-              {businessSuccess?.level ??
-                "N/A"}
-            </p>
 
-            <p>
-              Confidence:{" "}
-              <strong>
-                {businessSuccess?.confidence ??
-                  "N/A"}
-              </strong>
-            </p>
-          </div>
-
-          {/* SCORE CARDS */}
-
-          <div
-            style={{
-              display:
-                "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: "15px",
-            }}
-          >
-            <ScoreCard
-              title="Demand Score"
-              value={
-                demand?.score ??
-                0
-              }
-            />
-
-            <ScoreCard
-              title="Competition Score"
-              value={
-                competitors?.score ??
-                0
-              }
-            />
-
-            <ScoreCard
-              title="Accessibility Score"
-              value={
-                accessibility?.score ??
-                0
-              }
-            />
-
-            <ScoreCard
-              title="Risk Score"
-              value={
-                risk?.score ??
-                0
-              }
-            />
-          </div>
-
-          {/* COMPETITION */}
-
-          <div
-            style={{
-              marginTop:
-                "20px",
-              padding:
-                "20px",
-              background:
-                "white",
-              borderRadius:
-                "12px",
-            }}
-          >
-            <h3>
-              Competition
-            </h3>
-
-            <p>
-              Competitors:{" "}
-              <strong>
-                {competitors?.count ??
-                  0}
-              </strong>
-            </p>
-
-            <p>
-              Within 500m:{" "}
-              <strong>
-                {competitors?.within500m ??
-                  0}
-              </strong>
-            </p>
-
-            <p>
-              Within 1km:{" "}
-              <strong>
-                {competitors?.within1km ??
-                  0}
-              </strong>
-            </p>
-
-            <p>
-              Nearest Competitor:{" "}
-              <strong>
-                {competitors
-                  ?.nearest
-                  ?.name ||
-                  "None"}
-              </strong>
-            </p>
-
-            <p>
-              Average Distance:{" "}
-              <strong>
-                {competitors
-                  ?.averageDistance ??
-                  "N/A"}{" "}
-                km
-              </strong>
-            </p>
-          </div>
-
-          {/* DEMAND */}
-
-          <div
-            style={{
-              marginTop:
-                "20px",
-              padding:
-                "20px",
-              background:
-                "white",
-              borderRadius:
-                "12px",
-            }}
-          >
-            <h3>
-              Demand Indicators
-            </h3>
-
-            <p>
-              Education:{" "}
-              {demand?.education ??
-                0}
-            </p>
-
-            <p>
-              Offices:{" "}
-              {demand?.offices ??
-                0}
-            </p>
-
-            <p>
-              Hospitals:{" "}
-              {demand?.hospitals ??
-                0}
-            </p>
-
-            <p>
-              Clinics:{" "}
-              {demand?.clinics ??
-                0}
-            </p>
-
-            <p>
-              Pharmacies:{" "}
-              {demand?.pharmacies ??
-                0}
-            </p>
-
-            <p>
-              Shopping:{" "}
-              {demand?.shopping ??
-                0}
-            </p>
-
-            <p>
-              Transport:{" "}
-              {demand?.transport ??
-                0}
-            </p>
-
-            <p>
-              Tourism:{" "}
-              {demand?.tourism ??
-                0}
-            </p>
-
-            <p>
-              Residential:{" "}
-              {demand?.residential ??
-                0}
-            </p>
-          </div>
-
-          {/* ACCESSIBILITY */}
-
-          <div
-            style={{
-              marginTop:
-                "20px",
-              padding:
-                "20px",
-              background:
-                "white",
-              borderRadius:
-                "12px",
-            }}
-          >
-            <h3>
-              Accessibility
-            </h3>
-
-            <p>
-              Transport:{" "}
-              {accessibility
-                ?.transport ??
-                0}
-            </p>
-
-            <p>
-              Roads:{" "}
-              {accessibility?.roads ??
-                0}
-            </p>
-
-            <p>
-              Parking:{" "}
-              {accessibility?.parking ??
-                0}
-            </p>
-
-            <p>
-              Walkable Paths:{" "}
-              {accessibility?.walkable ??
-                0}
-            </p>
-          </div>
-
-          {/* RECOMMENDATIONS */}
-
-          {analysisData
-            ?.recommendations
-            ?.length > 0 && (
-            <div
-              style={{
-                marginTop:
-                  "20px",
-                padding:
-                  "20px",
-                background:
-                  "white",
-                borderRadius:
-                  "12px",
-              }}
+            <button
+              type="submit"
+              disabled={loading}
+              className="analyze-button"
             >
-              <h3>
-                Recommendations
-              </h3>
 
-              <ul>
-                {analysisData.recommendations.map(
-                  (
-                    recommendation,
-                    index
-                  ) => (
-                    <li
-                      key={
-                        index
-                      }
-                      style={{
-                        marginBottom:
-                          "10px",
-                      }}
-                    >
-                      {typeof recommendation ===
-                      "string"
-                        ? recommendation
-                        : recommendation.message ||
-                          recommendation.text ||
-                          JSON.stringify(
-                            recommendation
-                          )}
-                    </li>
-                  )
-                )}
-              </ul>
+              {loading ? (
+                <>
+                  <span className="button-spinner"></span>
+                  Analyzing Location...
+                </>
+              ) : (
+                <>
+                  🤖 Analyze Location
+                  <span>→</span>
+                </>
+              )}
+
+            </button>
+
+          </form>
+
+          {error && (
+            <div className="analysis-error">
+              <span>⚠️</span>
+              {error}
             </div>
           )}
 
-          {/* COMPETITOR LIST */}
+        </section>
 
-          {analysisData
-            ?.competitorBusinesses
-            ?.length > 0 && (
-            <div
-              style={{
-                marginTop:
-                  "20px",
-                padding:
-                  "20px",
-                background:
-                  "white",
-                borderRadius:
-                  "12px",
-              }}
-            >
-              <h3>
-                Nearby Competitors
-              </h3>
 
-              {analysisData.competitorBusinesses.map(
-                (
-                  competitor,
-                  index
-                ) => (
-                  <div
-                    key={
-                      competitor.id ||
-                      index
-                    }
-                    style={{
-                      padding:
-                        "12px 0",
-                      borderBottom:
-                        "1px solid #ddd",
-                    }}
-                  >
+        {/* ==================================================
+            RESULTS
+        ================================================== */}
+
+        {analysisData && (
+          <section className="results-section">
+
+            <div className="results-heading">
+
+              <div>
+
+                <span className="section-label">
+                  AI RESULTS
+                </span>
+
+                <h2>
+                  Location Analysis Results
+                </h2>
+
+                <p>
+                  AI-generated insights based on the
+                  selected location and business category.
+                </p>
+
+              </div>
+
+              <div className="result-generated">
+                ✓ Analysis Complete
+              </div>
+
+            </div>
+
+
+            {/* ==============================================
+                SUCCESS SCORE
+            ============================================== */}
+
+            <div className="success-score-card">
+
+              <div className="success-score-content">
+
+                <div>
+
+                  <span className="section-label">
+                    BUSINESS SUCCESS SCORE
+                  </span>
+
+                  <h2>
+                    Overall Business Potential
+                  </h2>
+
+                  <p>
+                    Estimated likelihood that this
+                    location can support your selected
+                    business.
+                  </p>
+
+                  <div className="success-level">
+                    {businessSuccess?.level ||
+                      "N/A"}
+                  </div>
+
+                  <div className="confidence-text">
+                    Model Confidence:{" "}
                     <strong>
-                      {
-                        competitor.name
-                      }
+                      {businessSuccess?.confidence ||
+                        "N/A"}
+                    </strong>
+                  </div>
+
+                </div>
+
+                <div className="success-score-circle">
+
+                  <div>
+
+                    <strong>
+                      {businessSuccess?.score ?? 0}
                     </strong>
 
-                    <br />
+                    <span>
+                      %
+                    </span>
 
-                    Category:{" "}
-                    {
-                      competitor.category
-                    }
-
-                    <br />
-
-                    Distance:{" "}
-                    {
-                      competitor.distance
-                    }{" "}
-                    km
                   </div>
-                )
-              )}
+
+                  <small>
+                    Success
+                  </small>
+
+                </div>
+
+              </div>
+
             </div>
-          )}
-        </div>
-      )}
+
+
+            {/* ==============================================
+                SCORE CARDS
+            ============================================== */}
+
+            <div className="result-score-grid">
+
+              <ScoreCard
+                icon="📈"
+                title="Demand Score"
+                value={demand?.score ?? 0}
+                type="demand"
+              />
+
+              <ScoreCard
+                icon="⚔️"
+                title="Competition Score"
+                value={competitors?.score ?? 0}
+                type="competition"
+              />
+
+              <ScoreCard
+                icon="🚶"
+                title="Accessibility Score"
+                value={accessibility?.score ?? 0}
+                type="accessibility"
+              />
+
+              <ScoreCard
+                icon="⚠️"
+                title="Risk Score"
+                value={risk?.score ?? 0}
+                type="risk"
+              />
+
+            </div>
+
+
+            {/* ==============================================
+                COMPETITION + DEMAND
+            ============================================== */}
+
+            <div className="result-two-column">
+
+              {/* COMPETITION */}
+
+              <div className="result-detail-card">
+
+                <div className="detail-card-header">
+
+                  <div className="detail-icon">
+                    ⚔️
+                  </div>
+
+                  <div>
+
+                    <h3>
+                      Competition
+                    </h3>
+
+                    <span>
+                      Nearby business landscape
+                    </span>
+
+                  </div>
+
+                </div>
+
+                <div className="detail-stat-grid">
+
+                  <DetailStat
+                    label="Total Competitors"
+                    value={competitors?.count ?? 0}
+                  />
+
+                  <DetailStat
+                    label="Within 500m"
+                    value={
+                      competitors?.within500m ?? 0
+                    }
+                  />
+
+                  <DetailStat
+                    label="Within 1km"
+                    value={
+                      competitors?.within1km ?? 0
+                    }
+                  />
+
+                  <DetailStat
+                    label="Average Distance"
+                    value={
+                      competitors?.averageDistance
+                        ? `${competitors.averageDistance} km`
+                        : "N/A"
+                    }
+                  />
+
+                </div>
+
+                <div className="nearest-competitor">
+
+                  <span>
+                    Nearest Competitor
+                  </span>
+
+                  <strong>
+                    {competitors?.nearest?.name ||
+                      "No nearby competitor found"}
+                  </strong>
+
+                </div>
+
+              </div>
+
+
+              {/* DEMAND */}
+
+              <div className="result-detail-card">
+
+                <div className="detail-card-header">
+
+                  <div className="detail-icon demand-icon">
+                    📊
+                  </div>
+
+                  <div>
+
+                    <h3>
+                      Demand Indicators
+                    </h3>
+
+                    <span>
+                      Nearby demand-generating factors
+                    </span>
+
+                  </div>
+
+                </div>
+
+                <div className="indicator-grid">
+
+                  <Indicator
+                    icon="🎓"
+                    label="Education"
+                    value={demand?.education ?? 0}
+                  />
+
+                  <Indicator
+                    icon="🏢"
+                    label="Offices"
+                    value={demand?.offices ?? 0}
+                  />
+
+                  <Indicator
+                    icon="🏥"
+                    label="Hospitals"
+                    value={demand?.hospitals ?? 0}
+                  />
+
+                  <Indicator
+                    icon="🩺"
+                    label="Clinics"
+                    value={demand?.clinics ?? 0}
+                  />
+
+                  <Indicator
+                    icon="💊"
+                    label="Pharmacies"
+                    value={demand?.pharmacies ?? 0}
+                  />
+
+                  <Indicator
+                    icon="🛍️"
+                    label="Shopping"
+                    value={demand?.shopping ?? 0}
+                  />
+
+                  <Indicator
+                    icon="🚌"
+                    label="Transport"
+                    value={demand?.transport ?? 0}
+                  />
+
+                  <Indicator
+                    icon="🏛️"
+                    label="Tourism"
+                    value={demand?.tourism ?? 0}
+                  />
+
+                  <Indicator
+                    icon="🏠"
+                    label="Residential"
+                    value={demand?.residential ?? 0}
+                  />
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            {/* ==============================================
+                ACCESSIBILITY
+            ============================================== */}
+
+            <div className="result-detail-card full-detail-card">
+
+              <div className="detail-card-header">
+
+                <div className="detail-icon accessibility-icon">
+                  🚦
+                </div>
+
+                <div>
+
+                  <h3>
+                    Accessibility
+                  </h3>
+
+                  <span>
+                    How easy it is for customers to
+                    reach the location
+                  </span>
+
+                </div>
+
+              </div>
+
+              <div className="accessibility-grid">
+
+                <AccessibilityItem
+                  icon="🚌"
+                  label="Public Transport"
+                  value={
+                    accessibility?.transport ?? 0
+                  }
+                />
+
+                <AccessibilityItem
+                  icon="🛣️"
+                  label="Road Access"
+                  value={
+                    accessibility?.roads ?? 0
+                  }
+                />
+
+                <AccessibilityItem
+                  icon="🅿️"
+                  label="Parking"
+                  value={
+                    accessibility?.parking ?? 0
+                  }
+                />
+
+                <AccessibilityItem
+                  icon="🚶"
+                  label="Walkable Paths"
+                  value={
+                    accessibility?.walkable ?? 0
+                  }
+                />
+
+              </div>
+
+            </div>
+
+
+            {/* ==============================================
+                RECOMMENDATIONS
+            ============================================== */}
+
+            {analysisData?.recommendations?.length >
+              0 && (
+
+              <div className="recommendations-card">
+
+                <div className="recommendations-header">
+
+                  <div className="recommendation-ai-icon">
+                    🤖
+                  </div>
+
+                  <div>
+
+                    <span className="section-label">
+                      AI INSIGHTS
+                    </span>
+
+                    <h2>
+                      Recommendations
+                    </h2>
+
+                    <p>
+                      Actionable suggestions based on
+                      the analysis results.
+                    </p>
+
+                  </div>
+
+                </div>
+
+                <div className="recommendation-list">
+
+                  {analysisData.recommendations.map(
+                    (recommendation, index) => (
+
+                      <div
+                        className="recommendation-item"
+                        key={index}
+                      >
+
+                        <div className="recommendation-number">
+                          {String(index + 1).padStart(
+                            2,
+                            "0"
+                          )}
+                        </div>
+
+                        <div>
+
+                          <strong>
+                            {typeof recommendation ===
+                            "string"
+                              ? recommendation
+                              : recommendation.message ||
+                                recommendation.text ||
+                                JSON.stringify(
+                                  recommendation
+                                )}
+                          </strong>
+
+                        </div>
+
+                      </div>
+
+                    )
+                  )}
+
+                </div>
+
+              </div>
+            )}
+
+
+            {/* ==============================================
+                COMPETITOR LIST
+            ============================================== */}
+
+            {analysisData?.competitorBusinesses
+              ?.length > 0 && (
+
+              <div className="competitor-list-card">
+
+                <div className="detail-card-header">
+
+                  <div className="detail-icon">
+                    🏪
+                  </div>
+
+                  <div>
+
+                    <h3>
+                      Nearby Competitors
+                    </h3>
+
+                    <span>
+                      Businesses found around your
+                      selected location
+                    </span>
+
+                  </div>
+
+                </div>
+
+                <div className="competitor-table">
+
+                  <div className="competitor-table-header">
+                    <span>
+                      Business
+                    </span>
+
+                    <span>
+                      Category
+                    </span>
+
+                    <span>
+                      Distance
+                    </span>
+                  </div>
+
+                  {analysisData.competitorBusinesses.map(
+                    (competitor, index) => (
+
+                      <div
+                        className="competitor-row"
+                        key={
+                          competitor.id ||
+                          index
+                        }
+                      >
+
+                        <div className="competitor-name">
+
+                          <div className="competitor-avatar">
+                            🏪
+                          </div>
+
+                          <strong>
+                            {competitor.name}
+                          </strong>
+
+                        </div>
+
+                        <span className="competitor-category">
+                          {competitor.category}
+                        </span>
+
+                        <span className="competitor-distance">
+                          📍 {competitor.distance} km
+                        </span>
+
+                      </div>
+
+                    )
+                  )}
+
+                </div>
+
+              </div>
+            )}
+
+          </section>
+        )}
+
+
+        {/* ==================================================
+            FOOTER
+        ================================================== */}
+
+        <footer className="analysis-footer">
+
+          <span>
+            © {new Date().getFullYear()} BizLens-AI
+          </span>
+
+          <span>
+            AI-Powered Business Location Intelligence
+          </span>
+
+        </footer>
+
+      </main>
+
     </div>
   );
 }
@@ -1376,40 +1442,135 @@ function Analysis() {
 // ============================================================
 
 function ScoreCard({
+  icon,
   title,
   value,
+  type,
 }) {
   return (
-    <div
-      style={{
-        background:
-          "white",
-        padding:
-          "20px",
-        borderRadius:
-          "12px",
-        textAlign:
-          "center",
-        boxShadow:
-          "0 2px 10px rgba(0,0,0,0.08)",
-      }}
-    >
-      {title}
+    <div className={`result-score-card ${type}`}>
 
-      <div
-        style={{
-          fontSize:
-            "35px",
-          fontWeight:
-            "bold",
-        }}
-      >
+      <div className="score-card-top">
+
+        <div className="score-icon">
+          {icon}
+        </div>
+
+        <span>
+          SCORE
+        </span>
+
+      </div>
+
+      <strong className="score-number">
         {value}
+      </strong>
+
+      <h3>
+        {title}
+      </h3>
+
+      <div className="score-progress">
+
+        <div
+          style={{
+            width: `${Math.min(
+              Math.max(Number(value) || 0, 0),
+              100
+            )}%`,
+          }}
+        ></div>
+
       </div>
 
       <small>
         out of 100
       </small>
+
+    </div>
+  );
+}
+
+// ============================================================
+// DETAIL STAT
+// ============================================================
+
+function DetailStat({ label, value }) {
+  return (
+    <div className="detail-stat">
+
+      <span>
+        {label}
+      </span>
+
+      <strong>
+        {value}
+      </strong>
+
+    </div>
+  );
+}
+
+// ============================================================
+// INDICATOR
+// ============================================================
+
+function Indicator({
+  icon,
+  label,
+  value,
+}) {
+  return (
+    <div className="indicator-item">
+
+      <span className="indicator-icon">
+        {icon}
+      </span>
+
+      <div>
+
+        <span>
+          {label}
+        </span>
+
+        <strong>
+          {value}
+        </strong>
+
+      </div>
+
+    </div>
+  );
+}
+
+// ============================================================
+// ACCESSIBILITY ITEM
+// ============================================================
+
+function AccessibilityItem({
+  icon,
+  label,
+  value,
+}) {
+  return (
+    <div className="accessibility-item">
+
+      <div className="accessibility-icon-box">
+        {icon}
+      </div>
+
+      <div>
+
+        <span>
+          {label}
+        </span>
+
+        <strong>
+          {value}
+        </strong>
+
+      </div>
+
     </div>
   );
 }

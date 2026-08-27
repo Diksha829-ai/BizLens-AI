@@ -15,11 +15,22 @@ import Analysis from "./pages/Analysis";
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem("token");
 
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
+  return token ? children : <Navigate to="/login" replace />;
+}
 
-  return children;
+// =====================================================
+// PUBLIC AUTH ROUTE
+// If already logged in, don't allow Login/Register
+// =====================================================
+
+function PublicAuthRoute({ children }) {
+  const token = localStorage.getItem("token");
+
+  return token ? (
+    <Navigate to="/dashboard" replace />
+  ) : (
+    children
+  );
 }
 
 // =====================================================
@@ -31,62 +42,55 @@ function App() {
     <Routes>
 
       {/* =================================================
-          DEFAULT ROUTE
-      ================================================= */}
+          DEFAULT
+          ================================================= */}
 
       <Route
         path="/"
         element={
-          <Navigate
-            to="/login"
-            replace
-          />
+          <Navigate to="/dashboard" replace />
         }
       />
 
       {/* =================================================
-          PUBLIC ROUTES
-      ================================================= */}
+          PUBLIC DASHBOARD
+          
+          IMPORTANT:
+          Dashboard must NOT be protected.
+          
+          Logged-out users can explore the dashboard.
+          ================================================= */}
+
+      <Route
+        path="/dashboard"
+        element={<Dashboard />}
+      />
+
+      {/* =================================================
+          AUTHENTICATION
+          ================================================= */}
 
       <Route
         path="/login"
-        element={<Login />}
+        element={
+          <PublicAuthRoute>
+            <Login />
+          </PublicAuthRoute>
+        }
       />
 
       <Route
         path="/register"
-        element={<Register />}
-      />
-
-      {/* =================================================
-          DASHBOARD
-      ================================================= */}
-
-      <Route
-        path="/dashboard"
         element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
+          <PublicAuthRoute>
+            <Register />
+          </PublicAuthRoute>
         }
       />
 
       {/* =================================================
-          LOCATION SELECTION
-      ================================================= */}
-
-      <Route
-        path="/location-selection"
-        element={
-          <ProtectedRoute>
-            <LocationSelection />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* =================================================
-          BUSINESS CATEGORY
-      ================================================= */}
+          PROTECTED APPLICATION
+          ================================================= */}
 
       <Route
         path="/business-category"
@@ -97,9 +101,14 @@ function App() {
         }
       />
 
-      {/* =================================================
-          ANALYSIS PREVIEW
-      ================================================= */}
+      <Route
+        path="/location-selection"
+        element={
+          <ProtectedRoute>
+            <LocationSelection />
+          </ProtectedRoute>
+        }
+      />
 
       <Route
         path="/analysis-preview"
@@ -109,10 +118,6 @@ function App() {
           </ProtectedRoute>
         }
       />
-
-      {/* =================================================
-          BUSINESS ANALYSIS
-      ================================================= */}
 
       <Route
         path="/analysis"
@@ -125,15 +130,12 @@ function App() {
 
       {/* =================================================
           UNKNOWN ROUTE
-      ================================================= */}
+          ================================================= */}
 
       <Route
         path="*"
         element={
-          <Navigate
-            to="/login"
-            replace
-          />
+          <Navigate to="/dashboard" replace />
         }
       />
 

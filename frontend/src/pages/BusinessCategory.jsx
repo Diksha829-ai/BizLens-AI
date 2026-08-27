@@ -1,20 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import "../styles/variables.css";
+import "../styles/components.css";
+import "../styles/business-category.css";
+
 function BusinessCategory() {
   const navigate = useNavigate();
 
-  const [latitude, setLatitude] =
-    useState(null);
-
-  const [longitude, setLongitude] =
-    useState(null);
-
-  const [locationName, setLocationName] =
-    useState("");
-
-  const [category, setCategory] =
-    useState("");
+  const [latitude, setLatitude] = useState(null);
+  const [longitude, setLongitude] = useState(null);
+  const [locationName, setLocationName] = useState("");
+  const [category, setCategory] = useState("");
 
   // ===================================================
   // LOAD SELECTED LOCATION
@@ -22,19 +19,13 @@ function BusinessCategory() {
 
   useEffect(() => {
     const savedLatitude =
-      localStorage.getItem(
-        "selectedLatitude"
-      );
+      localStorage.getItem("selectedLatitude");
 
     const savedLongitude =
-      localStorage.getItem(
-        "selectedLongitude"
-      );
+      localStorage.getItem("selectedLongitude");
 
     const savedLocationName =
-      localStorage.getItem(
-        "selectedLocationName"
-      );
+      localStorage.getItem("selectedLocationName");
 
     console.log(
       "======================================"
@@ -44,65 +35,36 @@ function BusinessCategory() {
       "Business Category - Selected Location"
     );
 
-    console.log(
-      "Latitude:",
-      savedLatitude
-    );
-
-    console.log(
-      "Longitude:",
-      savedLongitude
-    );
-
-    console.log(
-      "Location:",
-      savedLocationName
-    );
+    console.log("Latitude:", savedLatitude);
+    console.log("Longitude:", savedLongitude);
+    console.log("Location:", savedLocationName);
 
     console.log(
       "======================================"
     );
 
-    if (
-      !savedLatitude ||
-      !savedLongitude
-    ) {
-      alert(
-        "Please select a location first."
-      );
+    if (!savedLatitude || !savedLongitude) {
+      alert("Please select a location first.");
 
-      navigate(
-        "/location-selection"
-      );
+      navigate("/location-selection");
 
       return;
     }
 
-    setLatitude(
-      parseFloat(savedLatitude)
-    );
+    setLatitude(parseFloat(savedLatitude));
+    setLongitude(parseFloat(savedLongitude));
 
-    setLongitude(
-      parseFloat(savedLongitude)
-    );
-
-    setLocationName(
-      savedLocationName || ""
-    );
+    setLocationName(savedLocationName || "");
 
     // -------------------------------------------------
-    // Load previously selected category if available
+    // LOAD PREVIOUS CATEGORY
     // -------------------------------------------------
 
     const savedCategory =
-      localStorage.getItem(
-        "selectedCategory"
-      );
+      localStorage.getItem("selectedCategory");
 
     if (savedCategory) {
-      setCategory(
-        savedCategory
-      );
+      setCategory(savedCategory);
     }
   }, [navigate]);
 
@@ -115,44 +77,59 @@ function BusinessCategory() {
       name: "Cafe",
       value: "cafe",
       emoji: "☕",
+      description: "Coffee, beverages & snacks",
     },
 
     {
       name: "Restaurant",
       value: "restaurant",
       emoji: "🍽️",
+      description: "Dining & food services",
     },
 
     {
       name: "Gym",
       value: "gym",
       emoji: "🏋️",
+      description: "Fitness & wellness",
     },
 
     {
       name: "Medical Store",
       value: "pharmacy",
       emoji: "💊",
+      description: "Medicines & healthcare",
     },
 
     {
       name: "Salon",
       value: "salon",
       emoji: "💇",
+      description: "Beauty & personal care",
     },
 
     {
       name: "Grocery Store",
       value: "grocery",
       emoji: "🛒",
+      description: "Daily essentials",
     },
 
     {
       name: "Clothing Store",
       value: "clothing",
       emoji: "👕",
+      description: "Fashion & apparel",
     },
   ];
+
+  // ===================================================
+  // CATEGORY SELECT
+  // ===================================================
+
+  const handleCategorySelect = (value) => {
+    setCategory(value);
+  };
 
   // ===================================================
   // CONTINUE
@@ -160,69 +137,34 @@ function BusinessCategory() {
 
   const handleContinue = () => {
     if (!category) {
-      alert(
-        "Please select a business category."
-      );
-
+      alert("Please select a business category.");
       return;
     }
 
-    // -------------------------------------------------
-    // SAVE ONLY THE CURRENT CATEGORY
-    // -------------------------------------------------
-
+    // Save category
     localStorage.setItem(
       "selectedCategory",
       category
     );
 
-    // -------------------------------------------------
-    // REMOVE OLD ANALYSIS RESULT
-    // -------------------------------------------------
-
-    localStorage.removeItem(
-      "analysisResult"
-    );
+    // Remove old analysis
+    localStorage.removeItem("analysisResult");
 
     console.log(
       "======================================"
     );
 
-    console.log(
-      "Business Category Saved"
-    );
-
-    console.log(
-      "Category:",
-      category
-    );
-
-    console.log(
-      "Location:",
-      locationName
-    );
-
-    console.log(
-      "Latitude:",
-      latitude
-    );
-
-    console.log(
-      "Longitude:",
-      longitude
-    );
+    console.log("Business Category Saved");
+    console.log("Category:", category);
+    console.log("Location:", locationName);
+    console.log("Latitude:", latitude);
+    console.log("Longitude:", longitude);
 
     console.log(
       "======================================"
     );
 
-    // -------------------------------------------------
-    // NAVIGATE
-    // -------------------------------------------------
-
-    navigate(
-      "/analysis-preview"
-    );
+    navigate("/analysis-preview");
   };
 
   // ===================================================
@@ -230,9 +172,7 @@ function BusinessCategory() {
   // ===================================================
 
   const handleBack = () => {
-    navigate(
-      "/location-selection"
-    );
+    navigate("/location-selection");
   };
 
   // ===================================================
@@ -240,245 +180,347 @@ function BusinessCategory() {
   // ===================================================
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#f5f7fb",
-        padding: "30px",
-        fontFamily:
-          "Arial, Helvetica, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "1000px",
-          margin: "0 auto",
-        }}
-      >
-        {/* HEADER */}
+    <div className="business-category-page">
 
-        <div
-          style={{
-            background: "white",
-            padding: "30px",
-            borderRadius: "16px",
-            textAlign: "center",
-            marginBottom: "25px",
-            boxShadow:
-              "0 4px 15px rgba(0,0,0,0.08)",
-          }}
-        >
+      {/* =================================================
+          TOP NAVIGATION
+          ================================================= */}
+
+      <header className="category-header">
+
+        {/* LOGO */}
+
+        <div className="category-logo">
+
+          <div className="category-logo-icon">
+            B
+          </div>
+
+          <div>
+            <div className="category-logo-name">
+              BizLens
+            </div>
+
+            <div className="category-logo-ai">
+              AI
+            </div>
+          </div>
+
+        </div>
+
+        {/* STEP INDICATOR */}
+
+        <div className="category-step">
+
+          <span className="step-completed">
+            01
+          </span>
+
+          <div className="step-line"></div>
+
+          <span className="step-active">
+            02
+          </span>
+
+          <div className="step-line"></div>
+
+          <span className="step-pending">
+            03
+          </span>
+
+          <div className="step-line"></div>
+
+          <span className="step-pending">
+            04
+          </span>
+
+        </div>
+
+        <div className="category-step-label">
+          Business Category
+        </div>
+
+      </header>
+
+
+      {/* =================================================
+          MAIN
+          ================================================= */}
+
+      <main className="business-category-main">
+
+        {/* =================================================
+            PAGE INTRO
+            ================================================= */}
+
+        <section className="category-intro">
+
+          <div className="category-badge">
+            🏪 BUSINESS TYPE
+          </div>
+
           <h1>
-            Select Business Category
+            What business do you want
+            <br />
+            to open?
           </h1>
 
-          <p
-            style={{
-              color: "#6b7280",
-            }}
-          >
-            Choose the type of business
-            you want to analyze.
-          </p>
-        </div>
-
-        {/* LOCATION INFORMATION */}
-
-        <div
-          style={{
-            background: "#eff6ff",
-            padding: "20px",
-            borderRadius: "12px",
-            marginBottom: "25px",
-          }}
-        >
-          <h3>
-            📍 Selected Location
-          </h3>
-
-          {locationName && (
-            <p>
-              <strong>
-                {locationName}
-              </strong>
-            </p>
-          )}
-
           <p>
-            Latitude:{" "}
-            {latitude !== null
-              ? latitude.toFixed(6)
-              : "..."}
+            Select the type of business you want
+            to analyze at your chosen location.
           </p>
 
-          <p>
-            Longitude:{" "}
-            {longitude !== null
-              ? longitude.toFixed(6)
-              : "..."}
-          </p>
-        </div>
+        </section>
 
-        {/* CATEGORY GRID */}
 
-        <div
-          style={{
-            background: "white",
-            padding: "30px",
-            borderRadius: "16px",
-            boxShadow:
-              "0 4px 15px rgba(0,0,0,0.08)",
-          }}
-        >
-          <h2>
-            What business do you want
-            to open?
-          </h2>
+        {/* =================================================
+            SELECTED LOCATION
+            ================================================= */}
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit, minmax(180px, 1fr))",
-              gap: "20px",
-              marginTop: "25px",
-            }}
+        <section className="selected-location-card">
+
+          <div className="location-icon">
+            📍
+          </div>
+
+          <div className="location-content">
+
+            <span className="location-label">
+              SELECTED LOCATION
+            </span>
+
+            <h3>
+              {locationName ||
+                "Selected Location"}
+            </h3>
+
+            <div className="coordinates">
+
+              <span>
+                Latitude:{" "}
+                {latitude !== null
+                  ? latitude.toFixed(6)
+                  : "..."}
+              </span>
+
+              <span>
+                Longitude:{" "}
+                {longitude !== null
+                  ? longitude.toFixed(6)
+                  : "..."}
+              </span>
+
+            </div>
+
+          </div>
+
+          <button
+            type="button"
+            className="change-location-button"
+            onClick={handleBack}
           >
-            {categories.map(
-              (item) => (
+            Change Location
+          </button>
+
+        </section>
+
+
+        {/* =================================================
+            CATEGORY CARD
+            ================================================= */}
+
+        <section className="category-selection-card">
+
+          <div className="category-card-header">
+
+            <div>
+
+              <h2>
+                Choose a business category
+              </h2>
+
+              <p>
+                Select one category to continue
+                with the location analysis.
+              </p>
+
+            </div>
+
+            <div className="category-count">
+              {categories.length} categories
+            </div>
+
+          </div>
+
+
+          {/* =================================================
+              CATEGORY GRID
+              ================================================= */}
+
+          <div className="business-category-grid">
+
+            {categories.map((item) => {
+
+              const isSelected =
+                category === item.value;
+
+              return (
                 <button
                   key={item.value}
                   type="button"
+                  className={`business-category-card ${
+                    isSelected
+                      ? "selected"
+                      : ""
+                  }`}
                   onClick={() =>
-                    setCategory(
+                    handleCategorySelect(
                       item.value
                     )
                   }
-                  style={{
-                    padding:
-                      "25px 15px",
-
-                    border:
-                      category ===
-                      item.value
-                        ? "3px solid #2563eb"
-                        : "1px solid #d1d5db",
-
-                    borderRadius:
-                      "12px",
-
-                    background:
-                      category ===
-                      item.value
-                        ? "#eff6ff"
-                        : "white",
-
-                    cursor:
-                      "pointer",
-
-                    fontSize:
-                      "16px",
-
-                    fontWeight:
-                      "600",
-                  }}
                 >
-                  <div
-                    style={{
-                      fontSize:
-                        "40px",
 
-                      marginBottom:
-                        "10px",
-                    }}
-                  >
+                  {/* SELECTED CHECK */}
+
+                  {isSelected && (
+                    <div className="category-check">
+                      ✓
+                    </div>
+                  )}
+
+                  {/* ICON */}
+
+                  <div className="business-category-icon">
                     {item.emoji}
                   </div>
 
-                  {item.name}
+                  {/* NAME */}
+
+                  <h3>
+                    {item.name}
+                  </h3>
+
+                  {/* DESCRIPTION */}
+
+                  <p>
+                    {item.description}
+                  </p>
+
                 </button>
-              )
-            )}
+              );
+
+            })}
+
           </div>
 
-          {/* BUTTONS */}
+
+          {/* =================================================
+              SELECTED CATEGORY INFO
+              ================================================= */}
 
           <div
-            style={{
-              display: "flex",
-              justifyContent:
-                "center",
-              gap: "15px",
-              marginTop: "35px",
-            }}
+            className={`selected-category-info ${
+              category
+                ? "visible"
+                : ""
+            }`}
           >
-            <button
-              type="button"
-              onClick={
-                handleBack
-              }
-              style={{
-                padding:
-                  "13px 25px",
 
-                background:
-                  "white",
+            {category && (
+              <>
+                <span>
+                  Selected business:
+                </span>
 
-                border:
-                  "1px solid #d1d5db",
+                <strong>
+                  {
+                    categories.find(
+                      (item) =>
+                        item.value ===
+                        category
+                    )?.name
+                  }
+                </strong>
+              </>
+            )}
 
-                borderRadius:
-                  "8px",
-
-                cursor:
-                  "pointer",
-              }}
-            >
-              ← Back
-            </button>
-
-            <button
-              type="button"
-              onClick={
-                handleContinue
-              }
-              disabled={
-                !category
-              }
-              style={{
-                padding:
-                  "13px 30px",
-
-                background:
-                  category
-                    ? "#2563eb"
-                    : "#9ca3af",
-
-                color: "white",
-
-                border: "none",
-
-                borderRadius:
-                  "8px",
-
-                fontSize:
-                  "16px",
-
-                fontWeight:
-                  "600",
-
-                cursor:
-                  category
-                    ? "pointer"
-                    : "not-allowed",
-              }}
-            >
-              Continue to Analysis
-              Preview →
-            </button>
           </div>
+
+
+          {/* =================================================
+              ACTION BUTTONS
+              ================================================= */}
+
+          <div className="category-actions">
+
+            <button
+              type="button"
+              className="category-back-button"
+              onClick={handleBack}
+            >
+              <span>←</span>
+              Back
+            </button>
+
+            <button
+              type="button"
+              className="category-continue-button"
+              onClick={handleContinue}
+              disabled={!category}
+            >
+              Continue to Analysis Preview
+              <span>→</span>
+            </button>
+
+          </div>
+
+        </section>
+
+
+        {/* =================================================
+            INFO
+            ================================================= */}
+
+        <div className="category-info">
+
+          <span className="info-icon">
+            💡
+          </span>
+
+          <div>
+            <strong>
+              Why do we need this?
+            </strong>
+
+            <p>
+              Your business category determines
+              which competitors, demand indicators,
+              nearby businesses and location factors
+              BizLens-AI analyzes.
+            </p>
+          </div>
+
         </div>
-      </div>
+
+      </main>
+
+
+      {/* =================================================
+          FOOTER
+          ================================================= */}
+
+      <footer className="category-footer">
+
+        <span>
+          © {new Date().getFullYear()} BizLens-AI
+        </span>
+
+        <span>
+          AI-Powered Business Location Intelligence
+        </span>
+
+      </footer>
+
     </div>
   );
 }

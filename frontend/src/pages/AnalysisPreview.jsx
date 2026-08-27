@@ -1,171 +1,110 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import "../styles/analysis-preview.css";
+
 function AnalysisPreview() {
   const navigate = useNavigate();
 
-  const [location, setLocation] =
-    useState(null);
-
-  const [category, setCategory] =
-    useState("");
-
-  const [categoryName, setCategoryName] =
-    useState("");
-
-  const [radius, setRadius] =
-    useState(3);
+  const [location, setLocation] = useState(null);
+  const [category, setCategory] = useState("");
+  const [categoryName, setCategoryName] = useState("");
+  const [radius, setRadius] = useState(3);
 
   // ===================================================
-  // CATEGORY NAME
+  // CATEGORY INFORMATION
   // ===================================================
 
-  const categoryNames = {
-    cafe: "Cafe",
-    restaurant: "Restaurant",
-    gym: "Gym",
-    pharmacy: "Medical Store",
-    salon: "Salon",
-    grocery: "Grocery Store",
-    clothing: "Clothing Store",
+  const categoryInfo = {
+    cafe: {
+      name: "Cafe",
+      emoji: "☕",
+    },
+    restaurant: {
+      name: "Restaurant",
+      emoji: "🍽️",
+    },
+    gym: {
+      name: "Gym",
+      emoji: "🏋️",
+    },
+    pharmacy: {
+      name: "Medical Store",
+      emoji: "💊",
+    },
+    salon: {
+      name: "Salon",
+      emoji: "💇",
+    },
+    grocery: {
+      name: "Grocery Store",
+      emoji: "🛒",
+    },
+    clothing: {
+      name: "Clothing Store",
+      emoji: "👕",
+    },
   };
 
   // ===================================================
-  // LOAD CURRENT ANALYSIS DATA
+  // LOAD ANALYSIS DATA
   // ===================================================
 
   useEffect(() => {
     try {
-      // ------------------------------------------------
-      // LOAD LOCATION
-      // ------------------------------------------------
-
-      const savedLocation =
-        localStorage.getItem(
-          "selectedLocation"
-        );
-
-      const savedCategory =
-        localStorage.getItem(
-          "selectedCategory"
-        );
-
-      console.log(
-        "======================================"
+      const savedLocation = localStorage.getItem(
+        "selectedLocation"
       );
 
-      console.log(
-        "Analysis Preview Data"
-      );
-
-      console.log(
-        "Saved Location:",
-        savedLocation
-      );
-
-      console.log(
-        "Saved Category:",
-        savedCategory
-      );
-
-      console.log(
-        "======================================"
+      const savedCategory = localStorage.getItem(
+        "selectedCategory"
       );
 
       if (!savedLocation) {
-        alert(
-          "Please select a location first."
-        );
-
-        navigate(
-          "/location-selection"
-        );
-
+        alert("Please select a location first.");
+        navigate("/location-selection");
         return;
       }
 
       if (!savedCategory) {
-        alert(
-          "Please select a business category first."
-        );
-
-        navigate(
-          "/business-category"
-        );
-
+        alert("Please select a business category first.");
+        navigate("/business-category");
         return;
       }
 
-      const parsedLocation =
-        JSON.parse(
-          savedLocation
-        );
+      const parsedLocation = JSON.parse(savedLocation);
 
-      const lat =
-        Number(
-          parsedLocation.latitude
-        );
+      const lat = Number(parsedLocation.latitude);
+      const lng = Number(parsedLocation.longitude);
 
-      const lng =
-        Number(
-          parsedLocation.longitude
-        );
-
-      if (
-        Number.isNaN(lat) ||
-        Number.isNaN(lng)
-      ) {
-        alert(
-          "Selected location coordinates are invalid."
-        );
-
-        navigate(
-          "/location-selection"
-        );
-
+      if (Number.isNaN(lat) || Number.isNaN(lng)) {
+        alert("Selected location coordinates are invalid.");
+        navigate("/location-selection");
         return;
       }
 
       setLocation({
         ...parsedLocation,
-
         latitude: lat,
-
         longitude: lng,
       });
 
-      setCategory(
-        savedCategory
-      );
+      setCategory(savedCategory);
 
       setCategoryName(
-        categoryNames[
-          savedCategory
-        ] ||
+        categoryInfo[savedCategory]?.name ||
           savedCategory
       );
 
-      // ------------------------------------------------
-      // LOAD RADIUS
-      // ------------------------------------------------
-
-      const savedRadius =
-        localStorage.getItem(
-          "analysisRadius"
-        );
+      const savedRadius = localStorage.getItem(
+        "analysisRadius"
+      );
 
       if (savedRadius) {
-        const parsedRadius =
-          Number(savedRadius);
+        const parsedRadius = Number(savedRadius);
 
-        if (
-          !Number.isNaN(
-            parsedRadius
-          )
-        ) {
-          setRadius(
-            parsedRadius
-          );
+        if (!Number.isNaN(parsedRadius)) {
+          setRadius(parsedRadius);
         }
       }
     } catch (error) {
@@ -178,9 +117,7 @@ function AnalysisPreview() {
         "Unable to load analysis information."
       );
 
-      navigate(
-        "/location-selection"
-      );
+      navigate("/location-selection");
     }
   }, [navigate]);
 
@@ -190,41 +127,21 @@ function AnalysisPreview() {
 
   const handleStartAnalysis = () => {
     if (!location) {
-      alert(
-        "Location information is missing."
-      );
-
-      navigate(
-        "/location-selection"
-      );
-
+      alert("Location information is missing.");
+      navigate("/location-selection");
       return;
     }
 
     if (!category) {
-      alert(
-        "Business category is missing."
-      );
-
-      navigate(
-        "/business-category"
-      );
-
+      alert("Business category is missing.");
+      navigate("/business-category");
       return;
     }
-
-    // ------------------------------------------------
-    // SAVE CURRENT RADIUS
-    // ------------------------------------------------
 
     localStorage.setItem(
       "analysisRadius",
       String(radius)
     );
-
-    // ------------------------------------------------
-    // CLEAR OLD ANALYSIS
-    // ------------------------------------------------
 
     localStorage.removeItem(
       "analysisResult"
@@ -234,42 +151,21 @@ function AnalysisPreview() {
       "======================================"
     );
 
-    console.log(
-      "Starting Analysis"
-    );
-
-    console.log(
-      "Latitude:",
-      location.latitude
-    );
-
-    console.log(
-      "Longitude:",
-      location.longitude
-    );
-
+    console.log("Starting Analysis");
+    console.log("Latitude:", location.latitude);
+    console.log("Longitude:", location.longitude);
     console.log(
       "Location:",
       location.address
     );
-
-    console.log(
-      "Category:",
-      category
-    );
-
-    console.log(
-      "Radius:",
-      radius
-    );
+    console.log("Category:", category);
+    console.log("Radius:", radius);
 
     console.log(
       "======================================"
     );
 
-    navigate(
-      "/analysis"
-    );
+    navigate("/analysis");
   };
 
   // ===================================================
@@ -277,9 +173,7 @@ function AnalysisPreview() {
   // ===================================================
 
   const handleChangeLocation = () => {
-    navigate(
-      "/location-selection"
-    );
+    navigate("/location-selection");
   };
 
   // ===================================================
@@ -287,9 +181,7 @@ function AnalysisPreview() {
   // ===================================================
 
   const handleChangeCategory = () => {
-    navigate(
-      "/business-category"
-    );
+    navigate("/business-category");
   };
 
   // ===================================================
@@ -298,360 +190,654 @@ function AnalysisPreview() {
 
   if (!location) {
     return (
-      <div
-        style={{
-          padding: "30px",
-          maxWidth: "900px",
-          margin: "0 auto",
-          fontFamily:
-            "Arial, sans-serif",
-        }}
-      >
-        <h2>
-          Loading Analysis Preview...
-        </h2>
+      <div className="preview-loading">
+        <div className="preview-loading-card">
+          <div className="loading-spinner"></div>
+
+          <h2>
+            Loading Analysis Preview
+          </h2>
+
+          <p>
+            Preparing your business location
+            analysis...
+          </p>
+        </div>
       </div>
     );
   }
+
+  // ===================================================
+  // CATEGORY EMOJI
+  // ===================================================
+
+  const categoryEmoji =
+    categoryInfo[category]?.emoji || "🏪";
 
   // ===================================================
   // UI
   // ===================================================
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#f5f7fb",
-        padding: "30px",
-        fontFamily:
-          "Arial, Helvetica, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "900px",
-          margin: "0 auto",
-        }}
-      >
-        {/* HEADER */}
+    <div className="analysis-preview-page">
+
+      {/* =================================================
+          TOP HEADER
+      ================================================= */}
+
+      <header className="preview-header">
 
         <div
-          style={{
-            background: "white",
-            padding: "30px",
-            borderRadius: "16px",
-            marginBottom: "25px",
-            textAlign: "center",
-            boxShadow:
-              "0 4px 15px rgba(0,0,0,0.08)",
-          }}
+          className="preview-brand"
+          onClick={() =>
+            navigate("/dashboard")
+          }
         >
-          <h1>
-            BizLens-AI
-          </h1>
 
-          <h2>
-            Analysis Preview
-          </h2>
+          <div className="preview-logo">
+            B
+          </div>
 
-          <p
-            style={{
-              color: "#6b7280",
-            }}
-          >
-            Please review your analysis
-            details before starting the
-            business location analysis.
-          </p>
+          <div>
+            <div className="preview-brand-name">
+              BizLens
+            </div>
+
+            <div className="preview-brand-ai">
+              AI
+            </div>
+          </div>
+
         </div>
 
-        {/* LOCATION */}
-
-        <div
-          style={{
-            background: "white",
-            padding: "25px",
-            borderRadius: "12px",
-            marginBottom: "20px",
-            border:
-              "1px solid #e5e7eb",
-            boxShadow:
-              "0 2px 8px rgba(0,0,0,0.05)",
-          }}
+        <button
+          className="preview-dashboard-btn"
+          type="button"
+          onClick={() =>
+            navigate("/dashboard")
+          }
         >
-          <h3>
-            📍 Selected Location
-          </h3>
+          ← Dashboard
+        </button>
 
-          <p>
-            <strong>
-              Location:
-            </strong>{" "}
-            {location.address ||
-              location.name ||
-              "Selected Location"}
-          </p>
+      </header>
 
-          <p>
-            <strong>
-              Latitude:
-            </strong>{" "}
-            {location.latitude.toFixed(
-              6
-            )}
-          </p>
 
-          <p>
-            <strong>
-              Longitude:
-            </strong>{" "}
-            {location.longitude.toFixed(
-              6
-            )}
-          </p>
+      {/* =================================================
+          MAIN
+      ================================================= */}
 
-          <button
-            onClick={
-              handleChangeLocation
-            }
-            style={{
-              padding:
-                "10px 16px",
+      <main className="preview-main">
 
-              cursor:
-                "pointer",
-            }}
-          >
-            Change Location
-          </button>
+        {/* =================================================
+            PAGE TITLE
+        ================================================= */}
+
+        <section className="preview-title">
+
+          <div className="preview-title-icon">
+            ✨
+          </div>
+
+          <div>
+
+            <p className="preview-eyebrow">
+              BUSINESS LOCATION INTELLIGENCE
+            </p>
+
+            <h1>
+              Analysis Preview
+            </h1>
+
+            <p>
+              Review your analysis configuration
+              before starting the AI-powered
+              location analysis.
+            </p>
+
+          </div>
+
+        </section>
+
+
+        {/* =================================================
+            PROGRESS
+        ================================================= */}
+
+        <div className="preview-progress">
+
+          <div className="progress-step completed">
+
+            <div className="progress-circle">
+              ✓
+            </div>
+
+            <span>
+              Location
+            </span>
+
+          </div>
+
+          <div className="progress-line completed-line"></div>
+
+          <div className="progress-step completed">
+
+            <div className="progress-circle">
+              ✓
+            </div>
+
+            <span>
+              Business
+            </span>
+
+          </div>
+
+          <div className="progress-line active-line"></div>
+
+          <div className="progress-step active">
+
+            <div className="progress-circle">
+              3
+            </div>
+
+            <span>
+              Review
+            </span>
+
+          </div>
+
+          <div className="progress-line"></div>
+
+          <div className="progress-step">
+
+            <div className="progress-circle">
+              4
+            </div>
+
+            <span>
+              Analysis
+            </span>
+
+          </div>
+
         </div>
 
-        {/* BUSINESS */}
 
-        <div
-          style={{
-            background: "white",
-            padding: "25px",
-            borderRadius: "12px",
-            marginBottom: "20px",
-            border:
-              "1px solid #e5e7eb",
-            boxShadow:
-              "0 2px 8px rgba(0,0,0,0.05)",
-          }}
-        >
-          <h3>
-            🏪 Business Information
-          </h3>
+        {/* =================================================
+            CONFIGURATION CARDS
+        ================================================= */}
 
-          <p>
-            <strong>
-              Business Category:
-            </strong>{" "}
-            {categoryName}
-          </p>
+        <section className="preview-grid">
 
-          <p>
-            <strong>
-              Category ID:
-            </strong>{" "}
-            {category}
-          </p>
+          {/* LOCATION CARD */}
 
-          <button
-            onClick={
-              handleChangeCategory
-            }
-            style={{
-              padding:
-                "10px 16px",
+          <div className="preview-card">
 
-              cursor:
-                "pointer",
-            }}
-          >
-            Change Business Category
-          </button>
-        </div>
+            <div className="preview-card-header">
 
-        {/* RADIUS */}
+              <div className="preview-card-icon location-icon">
+                📍
+              </div>
 
-        <div
-          style={{
-            background: "white",
-            padding: "25px",
-            borderRadius: "12px",
-            marginBottom: "20px",
-            border:
-              "1px solid #e5e7eb",
-          }}
-        >
-          <h3>
-            📏 Analysis Radius
-          </h3>
+              <div>
 
-          <select
-            value={radius}
-            onChange={(e) =>
-              setRadius(
-                Number(
-                  e.target.value
+                <span>
+                  STEP 01
+                </span>
+
+                <h2>
+                  Selected Location
+                </h2>
+
+              </div>
+
+            </div>
+
+
+            <div className="location-display">
+
+              <div className="location-pin">
+                📍
+              </div>
+
+              <div>
+
+                <strong>
+                  {location.address ||
+                    location.name ||
+                    "Selected Location"}
+                </strong>
+
+                <p>
+                  Your selected analysis point
+                </p>
+
+              </div>
+
+            </div>
+
+
+            <div className="coordinates">
+
+              <div className="coordinate-item">
+
+                <span>
+                  LATITUDE
+                </span>
+
+                <strong>
+                  {location.latitude.toFixed(6)}
+                </strong>
+
+              </div>
+
+              <div className="coordinate-item">
+
+                <span>
+                  LONGITUDE
+                </span>
+
+                <strong>
+                  {location.longitude.toFixed(6)}
+                </strong>
+
+              </div>
+
+            </div>
+
+
+            <button
+              className="change-button"
+              type="button"
+              onClick={handleChangeLocation}
+            >
+              Change Location
+              <span>→</span>
+            </button>
+
+          </div>
+
+
+          {/* BUSINESS CARD */}
+
+          <div className="preview-card">
+
+            <div className="preview-card-header">
+
+              <div className="preview-card-icon business-icon">
+                🏪
+              </div>
+
+              <div>
+
+                <span>
+                  STEP 02
+                </span>
+
+                <h2>
+                  Business Type
+                </h2>
+
+              </div>
+
+            </div>
+
+
+            <div className="business-display">
+
+              <div className="business-emoji">
+                {categoryEmoji}
+              </div>
+
+              <div>
+
+                <strong>
+                  {categoryName}
+                </strong>
+
+                <p>
+                  Business category selected
+                </p>
+
+              </div>
+
+            </div>
+
+
+            <div className="category-id">
+
+              <span>
+                CATEGORY ID
+              </span>
+
+              <strong>
+                {category}
+              </strong>
+
+            </div>
+
+
+            <button
+              className="change-button"
+              type="button"
+              onClick={handleChangeCategory}
+            >
+              Change Business
+              <span>→</span>
+            </button>
+
+          </div>
+
+        </section>
+
+
+        {/* =================================================
+            RADIUS
+        ================================================= */}
+
+        <section className="radius-card">
+
+          <div className="radius-info">
+
+            <div className="radius-icon">
+              📏
+            </div>
+
+            <div>
+
+              <span>
+                ANALYSIS AREA
+              </span>
+
+              <h2>
+                Search Radius
+              </h2>
+
+              <p>
+                Choose how far BizLens-AI should
+                analyze businesses and location
+                factors around your selected point.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div className="radius-control">
+
+            <select
+              value={radius}
+              onChange={(e) =>
+                setRadius(
+                  Number(e.target.value)
                 )
-              )
-            }
-            style={{
-              padding: "12px",
-              width: "100%",
-              maxWidth: "300px",
-              border:
-                "1px solid #d1d5db",
-              borderRadius:
-                "8px",
-              fontSize: "16px",
-            }}
-          >
-            <option value={2}>
-              2 km
-            </option>
+              }
+            >
+              <option value={2}>
+                2 km
+              </option>
 
-            <option value={3}>
-              3 km
-            </option>
+              <option value={3}>
+                3 km
+              </option>
 
-            <option value={4}>
-              4 km
-            </option>
+              <option value={4}>
+                4 km
+              </option>
 
-            <option value={5}>
-              5 km
-            </option>
-          </select>
-        </div>
+              <option value={5}>
+                5 km
+              </option>
+            </select>
 
-        {/* SUMMARY */}
+            <small>
+              Analysis coverage
+            </small>
 
-        <div
-          style={{
-            background: "#eff6ff",
-            padding: "25px",
-            borderRadius: "12px",
-            marginBottom: "25px",
-          }}
-        >
-          <h3>
-            📊 Analysis Summary
-          </h3>
+          </div>
 
-          <p>
-            BizLens-AI will analyze:
-          </p>
+        </section>
 
-          <ul>
-            <li>
+
+        {/* =================================================
+            WHAT WILL BE ANALYZED
+        ================================================= */}
+
+        <section className="analysis-scope">
+
+          <div className="scope-header">
+
+            <div className="scope-icon">
+              🤖
+            </div>
+
+            <div>
+
+              <span>
+                AI ANALYSIS ENGINE
+              </span>
+
+              <h2>
+                What BizLens-AI will analyze
+              </h2>
+
+              <p>
+                Your selected configuration will
+                be used to generate a data-driven
+                business location assessment.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div className="scope-grid">
+
+            <div className="scope-item">
+
+              <div>
+                🏪
+              </div>
+
               <strong>
-                Location:
-              </strong>{" "}
-              {location.address ||
-                "Selected Location"}
-            </li>
+                Competition
+              </strong>
 
-            <li>
+              <span>
+                Nearby competing businesses
+              </span>
+
+            </div>
+
+
+            <div className="scope-item">
+
+              <div>
+                📈
+              </div>
+
               <strong>
-                Latitude:
-              </strong>{" "}
-              {location.latitude.toFixed(
-                6
-              )}
-            </li>
+                Market Demand
+              </strong>
 
-            <li>
+              <span>
+                Demand indicators and opportunity
+              </span>
+
+            </div>
+
+
+            <div className="scope-item">
+
+              <div>
+                🚶
+              </div>
+
               <strong>
-                Longitude:
-              </strong>{" "}
-              {location.longitude.toFixed(
-                6
-              )}
-            </li>
+                Accessibility
+              </strong>
 
-            <li>
+              <span>
+                Roads, transport and accessibility
+              </span>
+
+            </div>
+
+
+            <div className="scope-item">
+
+              <div>
+                🏢
+              </div>
+
               <strong>
-                Business:
-              </strong>{" "}
-              {categoryName}
-            </li>
+                Nearby Places
+              </strong>
 
-            <li>
+              <span>
+                Offices, schools, hospitals and more
+              </span>
+
+            </div>
+
+
+            <div className="scope-item">
+
+              <div>
+                📊
+              </div>
+
               <strong>
-                Radius:
-              </strong>{" "}
-              {radius} km
-            </li>
-          </ul>
+                Location Factors
+              </strong>
 
-          <p>
-            The system will analyze nearby
-            businesses, competition,
-            demand indicators,
-            accessibility, and other
-            available location data.
-          </p>
-        </div>
+              <span>
+                Geographic and demographic signals
+              </span>
 
-        {/* ACTION BUTTONS */}
+            </div>
 
-        <div
-          style={{
-            display: "flex",
-            gap: "12px",
-            flexWrap: "wrap",
-          }}
-        >
-          <button
-            onClick={() =>
-              navigate(
-                "/business-category"
-              )
-            }
-            style={{
-              padding:
-                "12px 20px",
-              cursor:
-                "pointer",
-            }}
-          >
-            ← Back
-          </button>
 
-          <button
-            onClick={
-              handleStartAnalysis
-            }
-            style={{
-              padding:
-                "12px 25px",
+            <div className="scope-item">
 
-              cursor:
-                "pointer",
+              <div>
+                🧠
+              </div>
 
-              fontWeight:
-                "bold",
+              <strong>
+                AI Recommendations
+              </strong>
 
-              background:
-                "#2563eb",
+              <span>
+                Business opportunities and risks
+              </span>
 
-              color: "white",
+            </div>
 
-              border: "none",
+          </div>
 
-              borderRadius:
-                "8px",
-            }}
-          >
-            🚀 Start Analysis
-          </button>
-        </div>
-      </div>
+        </section>
+
+
+        {/* =================================================
+            FINAL SUMMARY
+        ================================================= */}
+
+        <section className="final-summary">
+
+          <div className="summary-left">
+
+            <div className="summary-icon">
+              ✓
+            </div>
+
+            <div>
+
+              <span>
+                READY TO ANALYZE
+              </span>
+
+              <h2>
+                Your analysis is configured
+              </h2>
+
+              <p>
+                {categoryName} analysis around{" "}
+                <strong>
+                  {location.address ||
+                    location.name ||
+                    "your selected location"}
+                </strong>{" "}
+                within a{" "}
+                <strong>
+                  {radius} km
+                </strong>{" "}
+                radius.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div className="summary-actions">
+
+            <button
+              className="back-button"
+              type="button"
+              onClick={() =>
+                navigate(
+                  "/business-category"
+                )
+              }
+            >
+              ← Back
+            </button>
+
+            <button
+              className="start-analysis-button"
+              type="button"
+              onClick={
+                handleStartAnalysis
+              }
+            >
+              <span>
+                🚀
+              </span>
+
+              Start AI Analysis
+
+              <span>
+                →
+              </span>
+
+            </button>
+
+          </div>
+
+        </section>
+
+      </main>
+
+
+      {/* =================================================
+          FOOTER
+      ================================================= */}
+
+      <footer className="preview-footer">
+
+        <span>
+          © {new Date().getFullYear()} BizLens-AI
+        </span>
+
+        <span>
+          AI-Powered Business Location Intelligence
+        </span>
+
+      </footer>
+
     </div>
   );
 }
