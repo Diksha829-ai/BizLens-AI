@@ -333,7 +333,7 @@ function Dashboard() {
 
               <button
                 type="button"
-                className="login-button"
+                className="signin-button"
                 onClick={handleLogin}
               >
                 Sign In

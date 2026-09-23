@@ -73,56 +73,278 @@ function BusinessCategory() {
   // ===================================================
 
   const categories = [
-    {
-      name: "Cafe",
-      value: "cafe",
-      emoji: "☕",
-      description: "Coffee, beverages & snacks",
-    },
+  // 🍽️ Food & Beverages
+  {
+    name: "Cafe",
+    value: "cafe",
+    emoji: "☕",
+    description: "Coffee, beverages & snacks",
+  },
+  {
+    name: "Restaurant",
+    value: "restaurant",
+    emoji: "🍽️",
+    description: "Dining & food services",
+  },
+  {
+    name: "Bakery",
+    value: "bakery",
+    emoji: "🥐",
+    description: "Bread, cakes & baked foods",
+  },
+  {
+    name: "Fast Food",
+    value: "fast_food",
+    emoji: "🍔",
+    description: "Quick meals & takeaway",
+  },
+  {
+    name: "Juice & Shake Shop",
+    value: "juice_shop",
+    emoji: "🥤",
+    description: "Fresh juices, shakes & drinks",
+  },
 
-    {
-      name: "Restaurant",
-      value: "restaurant",
-      emoji: "🍽️",
-      description: "Dining & food services",
-    },
+  // 🛒 Daily Essentials
+  {
+    name: "Grocery Store",
+    value: "grocery",
+    emoji: "🛒",
+    description: "Daily groceries & essentials",
+  },
+  {
+    name: "Supermarket",
+    value: "supermarket",
+    emoji: "🏪",
+    description: "Groceries & household products",
+  },
+  {
+    name: "Vegetable & Fruit Shop",
+    value: "vegetable_fruit",
+    emoji: "🥦",
+    description: "Fresh fruits & vegetables",
+  },
+  {
+    name: "Dairy & Milk Shop",
+    value: "dairy",
+    emoji: "🥛",
+    description: "Milk, dairy & daily products",
+  },
+  {
+    name: "Meat & Chicken Shop",
+    value: "meat",
+    emoji: "🍗",
+    description: "Fresh meat & poultry",
+  },
 
-    {
-      name: "Gym",
-      value: "gym",
-      emoji: "🏋️",
-      description: "Fitness & wellness",
-    },
+  // 💊 Healthcare
+  {
+    name: "Medical Store",
+    value: "pharmacy",
+    emoji: "💊",
+    description: "Medicines & healthcare",
+  },
+  {
+    name: "Clinic",
+    value: "clinic",
+    emoji: "🏥",
+    description: "General medical services",
+  },
+  {
+    name: "Dental Clinic",
+    value: "dentist",
+    emoji: "🦷",
+    description: "Dental care & treatment",
+  },
+  {
+    name: "Diagnostic Center",
+    value: "diagnostic",
+    emoji: "🧪",
+    description: "Medical tests & diagnostics",
+  },
+  {
+    name: "Optical Store",
+    value: "optical",
+    emoji: "👓",
+    description: "Eyewear & vision products",
+  },
 
-    {
-      name: "Medical Store",
-      value: "pharmacy",
-      emoji: "💊",
-      description: "Medicines & healthcare",
-    },
+  // 💇 Personal Care
+  {
+    name: "Salon",
+    value: "salon",
+    emoji: "💇",
+    description: "Beauty & personal care",
+  },
+  {
+    name: "Beauty Parlour",
+    value: "beauty_parlour",
+    emoji: "💅",
+    description: "Beauty treatments & grooming",
+  },
+  {
+    name: "Spa",
+    value: "spa",
+    emoji: "🧖",
+    description: "Relaxation & wellness",
+  },
 
-    {
-      name: "Salon",
-      value: "salon",
-      emoji: "💇",
-      description: "Beauty & personal care",
-    },
+  // 🏋️ Fitness
+  {
+    name: "Gym",
+    value: "gym",
+    emoji: "🏋️",
+    description: "Fitness & wellness",
+  },
+  {
+    name: "Yoga Center",
+    value: "yoga",
+    emoji: "🧘",
+    description: "Yoga & fitness classes",
+  },
+  {
+    name: "Sports Center",
+    value: "sports_center",
+    emoji: "🏸",
+    description: "Sports & recreational activities",
+  },
 
-    {
-      name: "Grocery Store",
-      value: "grocery",
-      emoji: "🛒",
-      description: "Daily essentials",
-    },
+  // 👕 Shopping
+  {
+    name: "Clothing Store",
+    value: "clothing",
+    emoji: "👕",
+    description: "Fashion & apparel",
+  },
+  {
+    name: "Footwear Store",
+    value: "footwear",
+    emoji: "👟",
+    description: "Shoes & footwear",
+  },
+  {
+    name: "Mobile & Accessories",
+    value: "mobile_store",
+    emoji: "📱",
+    description: "Mobiles & electronic accessories",
+  },
+  {
+    name: "Electronics Store",
+    value: "electronics",
+    emoji: "💻",
+    description: "Electronics & appliances",
+  },
+  {
+    name: "Furniture Store",
+    value: "furniture",
+    emoji: "🛋️",
+    description: "Furniture & home products",
+  },
 
-    {
-      name: "Clothing Store",
-      value: "clothing",
-      emoji: "👕",
-      description: "Fashion & apparel",
-    },
-  ];
+  // 🏠 Home Services
+  {
+    name: "Hardware Store",
+    value: "hardware",
+    emoji: "🔧",
+    description: "Tools, hardware & supplies",
+  },
+  {
+    name: "Electrical Store",
+    value: "electrical",
+    emoji: "💡",
+    description: "Electrical goods & equipment",
+  },
+  {
+    name: "Plumbing Store",
+    value: "plumbing",
+    emoji: "🚰",
+    description: "Plumbing supplies & fittings",
+  },
+  {
+    name: "Laundry",
+    value: "laundry",
+    emoji: "🧺",
+    description: "Laundry & dry cleaning",
+  },
 
+  // 📚 Education
+  {
+    name: "Tuition Center",
+    value: "tuition",
+    emoji: "📚",
+    description: "Academic coaching & tuition",
+  },
+  {
+    name: "Computer Institute",
+    value: "computer_institute",
+    emoji: "🖥️",
+    description: "Computer & technical training",
+  },
+  {
+    name: "Stationery Store",
+    value: "stationery",
+    emoji: "✏️",
+    description: "Stationery & school supplies",
+  },
+
+  // 🚗 Automotive
+  {
+    name: "Petrol Pump",
+    value: "petrol_pump",
+    emoji: "⛽",
+    description: "Fuel & vehicle services",
+  },
+  {
+    name: "Car Service Center",
+    value: "car_service",
+    emoji: "🚗",
+    description: "Car repair & maintenance",
+  },
+  {
+    name: "Bike Service Center",
+    value: "bike_service",
+    emoji: "🏍️",
+    description: "Two-wheeler repair & service",
+  },
+  {
+    name: "Car Wash",
+    value: "car_wash",
+    emoji: "🚿",
+    description: "Vehicle cleaning & detailing",
+  },
+
+  // 🐶 Other Daily Services
+  {
+    name: "Pet Shop",
+    value: "pet_shop",
+    emoji: "🐶",
+    description: "Pet supplies & products",
+  },
+  {
+    name: "Mobile Repair",
+    value: "mobile_repair",
+    emoji: "📱",
+    description: "Mobile repair & servicing",
+  },
+  {
+    name: "Courier & Parcel",
+    value: "courier",
+    emoji: "📦",
+    description: "Courier & delivery services",
+  },
+  {
+    name: "Printing & Xerox",
+    value: "printing",
+    emoji: "🖨️",
+    description: "Printing, scanning & photocopy",
+  },
+  {
+    name: "General Store",
+    value: "general_store",
+    emoji: "🏬",
+    description: "Everyday household products",
+  },
+];
   // ===================================================
   // CATEGORY SELECT
   // ===================================================

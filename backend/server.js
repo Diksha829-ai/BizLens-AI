@@ -1,6 +1,13 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
+const dns = require("dns");
+
+// ============================================================
+// FIX DNS RESOLUTION FOR MONGODB ATLAS SRV LOOKUPS
+// ============================================================
+dns.setDefaultResultOrder("ipv4first");
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
 const connectDB = require("./config/db");
 

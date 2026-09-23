@@ -6,19 +6,9 @@ const {
   calculateBusinessAnalysis,
 } = require("../services/scoringService");
 
-
-// ============================================================
-// BizLens-AI
-// LOCATION ANALYSIS CONTROLLER
-// ============================================================
-
-
-// ============================================================
-// CATEGORY TAG MAPPING
-// ============================================================
+const Analysis = require("../models/Analysis");
 
 const CATEGORY_TAGS = {
-
   gym: {
     leisure: [
       "fitness_centre",
@@ -39,7 +29,6 @@ const CATEGORY_TAGS = {
     shop: [],
   },
 
-
   cafe: {
     amenity: [
       "cafe",
@@ -50,7 +39,6 @@ const CATEGORY_TAGS = {
     ],
   },
 
-
   restaurant: {
     amenity: [
       "restaurant",
@@ -60,7 +48,6 @@ const CATEGORY_TAGS = {
 
     shop: [],
   },
-
 
   pharmacy: {
     amenity: [
@@ -80,7 +67,6 @@ const CATEGORY_TAGS = {
     ],
   },
 
-
   salon: {
     shop: [
       "hairdresser",
@@ -88,7 +74,6 @@ const CATEGORY_TAGS = {
       "cosmetics",
     ],
   },
-
 
   grocery: {
     shop: [
@@ -104,7 +89,6 @@ const CATEGORY_TAGS = {
     ],
   },
 
-
   clothing: {
     shop: [
       "clothes",
@@ -112,7 +96,6 @@ const CATEGORY_TAGS = {
       "boutique",
     ],
   },
-
 
   medical_store: {
     amenity: [
@@ -132,14 +115,7 @@ const CATEGORY_TAGS = {
     ],
   },
 };
-
-
-// ============================================================
-// NAME KEYWORDS
-// ============================================================
-
 const CATEGORY_NAME_KEYWORDS = {
-
   pharmacy: [
     "pharmacy",
     "chemist",
@@ -152,7 +128,6 @@ const CATEGORY_NAME_KEYWORDS = {
     "drug store",
     "drugstore",
   ],
-
 
   medical_store: [
     "pharmacy",
@@ -167,7 +142,6 @@ const CATEGORY_NAME_KEYWORDS = {
     "drugstore",
   ],
 
-
   gym: [
     "gym",
     "fitness",
@@ -177,20 +151,17 @@ const CATEGORY_NAME_KEYWORDS = {
     "bodybuilding",
   ],
 
-
   cafe: [
     "cafe",
     "café",
     "coffee",
   ],
 
-
   restaurant: [
     "restaurant",
     "dhaba",
     "biryani",
   ],
-
 
   salon: [
     "salon",
@@ -200,7 +171,6 @@ const CATEGORY_NAME_KEYWORDS = {
     "hair",
   ],
 
-
   grocery: [
     "grocery",
     "supermarket",
@@ -209,7 +179,6 @@ const CATEGORY_NAME_KEYWORDS = {
     "general store",
     "provision",
   ],
-
 
   clothing: [
     "clothing",
@@ -226,13 +195,11 @@ const CATEGORY_NAME_KEYWORDS = {
 // ============================================================
 
 const CATEGORY_EXCLUSIONS = {
-
   pharmacy: [
     "hospital",
     "college",
     "school",
     "clinic",
-    "laboratory",
     "laboratory",
     "lab",
     "doctor",
@@ -243,7 +210,6 @@ const CATEGORY_EXCLUSIONS = {
     "medical centre",
     "medical center",
   ],
-
 
   medical_store: [
     "hospital",
@@ -259,13 +225,11 @@ const CATEGORY_EXCLUSIONS = {
     "medical college",
   ],
 
-
   gym: [
     "school gym",
     "college gym",
     "gymnasium hall",
   ],
-
 
   cafe: [
     "cafe inside",
@@ -273,78 +237,37 @@ const CATEGORY_EXCLUSIONS = {
 };
 
 
-// ============================================================
-// NORMALIZE CATEGORY
-// ============================================================
-
-function normalizeCategory(
-  category
-) {
-
-  const value =
-    String(
-      category || ""
-    )
-      .toLowerCase()
-      .trim();
-
+function normalizeCategory(category) {
+  const value = String(category || "")
+    .toLowerCase()
+    .trim();
 
   const aliases = {
+    "medical store": "pharmacy",
+    "medical shop": "pharmacy",
+    medical: "pharmacy",
+    chemist: "pharmacy",
+    pharmacy: "pharmacy",
 
-    "medical store":
-      "pharmacy",
+    gym: "gym",
+    "fitness center": "gym",
+    "fitness centre": "gym",
 
-    "medical shop":
-      "pharmacy",
+    "coffee shop": "cafe",
+    coffee: "cafe",
 
-    "medical":
-      "pharmacy",
+    restaurant: "restaurant",
 
-    "chemist":
-      "pharmacy",
+    salon: "salon",
 
-    pharmacy:
-      "pharmacy",
+    grocery: "grocery",
+    kirana: "grocery",
 
-    gym:
-      "gym",
-
-    "fitness center":
-      "gym",
-
-    "fitness centre":
-      "gym",
-
-    "coffee shop":
-      "cafe",
-
-    coffee:
-      "cafe",
-
-    restaurant:
-      "restaurant",
-
-    salon:
-      "salon",
-
-    grocery:
-      "grocery",
-
-    kirana:
-      "grocery",
-
-    clothing:
-      "clothing",
-
-    clothes:
-      "clothing",
+    clothing: "clothing",
+    clothes: "clothing",
   };
 
-
-  return (
-    aliases[value] ||
-    value
-  );
+  return aliases[value] || value;
 }
 
 
@@ -352,109 +275,53 @@ function normalizeCategory(
 // NORMALIZE TEXT
 // ============================================================
 
-function normalizeText(
-  value
-) {
-
-  return String(
-    value || ""
-  )
+function normalizeText(value) {
+  return String(value || "")
     .toLowerCase()
     .trim()
-    .replace(
-      /\s+/g,
-      " "
-    );
+    .replace(/\s+/g, " ");
 }
 
 
-// ============================================================
-// TAG MATCH
-// ============================================================
-
-function hasMatchingTag(
-  tags,
-  mapping
-) {
-
-  if (
-    !mapping
-  ) {
+function hasMatchingTag(tags, mapping) {
+  if (!mapping) {
     return false;
   }
 
-
-  return Object.entries(
-    mapping
-  ).some(
+  return Object.entries(mapping).some(
     ([tagName, values]) => {
+      const tagValue = normalizeText(
+        tags[tagName]
+      );
 
-      const tagValue =
-        normalizeText(
-          tags[tagName]
-        );
-
-
-      if (
-        !tagValue
-      ) {
+      if (!tagValue) {
         return false;
       }
 
-
       return values
-        .map(
-          value =>
-            normalizeText(
-              value
-            )
+        .map((value) =>
+          normalizeText(value)
         )
-        .includes(
-          tagValue
-        );
+        .includes(tagValue);
     }
   );
 }
 
-
-// ============================================================
-// SEARCHABLE TEXT
-// ============================================================
-
-function getSearchableText(
-  place
-) {
-
+function getSearchableText(place) {
   return [
     place.name,
     place.brand,
     place.operator,
     place.description,
   ]
-    .map(
-      normalizeText
-    )
-    .filter(
-      Boolean
-    )
+    .map(normalizeText)
+    .filter(Boolean)
     .join(" ");
 }
 
-
-// ============================================================
-// NAME MATCH
-// ============================================================
-
-function hasNameKeyword(
-  place,
-  category
-) {
-
+function hasNameKeyword(place, category) {
   const keywords =
-    CATEGORY_NAME_KEYWORDS[
-      category
-    ];
-
+    CATEGORY_NAME_KEYWORDS[category];
 
   if (
     !keywords ||
@@ -463,38 +330,20 @@ function hasNameKeyword(
     return false;
   }
 
-
   const text =
-    getSearchableText(
-      place
-    );
-
+    getSearchableText(place);
 
   return keywords.some(
-    keyword =>
+    (keyword) =>
       text.includes(
-        normalizeText(
-          keyword
-        )
+        normalizeText(keyword)
       )
   );
 }
 
-
-// ============================================================
-// EXCLUSION CHECK
-// ============================================================
-
-function hasExclusionKeyword(
-  place,
-  category
-) {
-
+function hasExclusionKeyword(place, category) {
   const exclusions =
-    CATEGORY_EXCLUSIONS[
-      category
-    ];
-
+    CATEGORY_EXCLUSIONS[category];
 
   if (
     !exclusions ||
@@ -503,29 +352,20 @@ function hasExclusionKeyword(
     return false;
   }
 
-
-  const text =
-    [
-      place.name,
-      place.brand,
-      place.operator,
-      place.description,
-    ]
-      .map(
-        normalizeText
-      )
-      .filter(
-        Boolean
-      )
-      .join(" ");
-
+  const text = [
+    place.name,
+    place.brand,
+    place.operator,
+    place.description,
+  ]
+    .map(normalizeText)
+    .filter(Boolean)
+    .join(" ");
 
   return exclusions.some(
-    keyword =>
+    (keyword) =>
       text.includes(
-        normalizeText(
-          keyword
-        )
+        normalizeText(keyword)
       )
   );
 }
@@ -535,24 +375,12 @@ function hasExclusionKeyword(
 // COMPETITOR DETECTION
 // ============================================================
 
-function detectCompetitor(
-  place,
-  category
-) {
-
+function detectCompetitor(place, category) {
   const tags =
     place.tags || {};
 
-
   const mapping =
-    CATEGORY_TAGS[
-      category
-    ];
-
-
-  // ----------------------------------------------------------
-  // EXCLUSION
-  // ----------------------------------------------------------
+    CATEGORY_TAGS[category];
 
   if (
     hasExclusionKeyword(
@@ -560,25 +388,12 @@ function detectCompetitor(
       category
     )
   ) {
-
     return {
-
-      isCompetitor:
-        false,
-
-      detectionMethod:
-        "excluded",
-
-      detectionConfidence:
-        "High",
-
+      isCompetitor: false,
+      detectionMethod: "excluded",
+      detectionConfidence: "High",
     };
   }
-
-
-  // ----------------------------------------------------------
-  // DIRECT OSM TAG
-  // ----------------------------------------------------------
 
   if (
     mapping &&
@@ -587,49 +402,26 @@ function detectCompetitor(
       mapping
     )
   ) {
-
     return {
-
-      isCompetitor:
-        true,
-
-      detectionMethod:
-        "osm_tag",
-
-      detectionConfidence:
-        "High",
-
+      isCompetitor: true,
+      detectionMethod: "osm_tag",
+      detectionConfidence: "High",
     };
   }
 
-
-  // ----------------------------------------------------------
-  // NORMALIZED CATEGORY
-  // ----------------------------------------------------------
 
   if (
-    place.category ===
-    category
+    normalizeCategory(
+      place.category
+    ) === category
   ) {
-
     return {
-
-      isCompetitor:
-        true,
-
+      isCompetitor: true,
       detectionMethod:
         "normalized_category",
-
-      detectionConfidence:
-        "High",
-
+      detectionConfidence: "High",
     };
   }
-
-
-  // ----------------------------------------------------------
-  // NAME MATCH
-  // ----------------------------------------------------------
 
   if (
     hasNameKeyword(
@@ -637,85 +429,46 @@ function detectCompetitor(
       category
     )
   ) {
-
     return {
-
-      isCompetitor:
-        true,
-
-      detectionMethod:
-        "name_match",
-
-      detectionConfidence:
-        "Medium",
-
+      isCompetitor: true,
+      detectionMethod: "name_match",
+      detectionConfidence: "Medium",
     };
   }
 
-
   return {
-
-    isCompetitor:
-      false,
-
-    detectionMethod:
-      "none",
-
-    detectionConfidence:
-      "None",
-
+    isCompetitor: false,
+    detectionMethod: "none",
+    detectionConfidence: "None",
   };
 }
-
-
-// ============================================================
-// HAVERSINE DISTANCE
-// ============================================================
-
 function calculateDistance(
   lat1,
   lon1,
   lat2,
   lon2
 ) {
-
-  const earthRadius =
-    6371;
-
+  const earthRadius = 6371;
 
   const dLat =
-    (
-      (lat2 - lat1) *
-      Math.PI
-    ) / 180;
-
+    ((lat2 - lat1) *
+      Math.PI) /
+    180;
 
   const dLon =
-    (
-      (lon2 - lon1) *
-      Math.PI
-    ) / 180;
-
+    ((lon2 - lon1) *
+      Math.PI) /
+    180;
 
   const a =
-    Math.sin(
-      dLat / 2
-    ) ** 2 +
-
+    Math.sin(dLat / 2) ** 2 +
     Math.cos(
-      (lat1 * Math.PI) /
-        180
+      (lat1 * Math.PI) / 180
     ) *
-
-    Math.cos(
-      (lat2 * Math.PI) /
-        180
-    ) *
-
-    Math.sin(
-      dLon / 2
-    ) ** 2;
-
+      Math.cos(
+        (lat2 * Math.PI) / 180
+      ) *
+      Math.sin(dLon / 2) ** 2;
 
   const c =
     2 *
@@ -724,155 +477,77 @@ function calculateDistance(
       Math.sqrt(1 - a)
     );
 
-
-  return (
-    earthRadius * c
-  );
+  return earthRadius * c;
 }
-
-
-// ============================================================
-// DATA COVERAGE
-// ============================================================
 
 function calculateDataCoverage(
   totalPlaces,
   radius
 ) {
-
   let score;
 
-
-  if (
-    totalPlaces >= 500
-  ) {
-
+  if (totalPlaces >= 500) {
     score = 100;
-
-  } else if (
-    totalPlaces >= 250
-  ) {
-
+  } else if (totalPlaces >= 250) {
     score = 85;
-
-  } else if (
-    totalPlaces >= 100
-  ) {
-
+  } else if (totalPlaces >= 100) {
     score = 70;
-
-  } else if (
-    totalPlaces >= 50
-  ) {
-
+  } else if (totalPlaces >= 50) {
     score = 55;
-
-  } else if (
-    totalPlaces >= 25
-  ) {
-
+  } else if (totalPlaces >= 25) {
     score = 40;
-
-  } else if (
-    totalPlaces >= 10
-  ) {
-
+  } else if (totalPlaces >= 10) {
     score = 25;
-
-  } else if (
-    totalPlaces >= 5
-  ) {
-
+  } else if (totalPlaces >= 5) {
     score = 15;
-
   } else {
-
     score = 5;
   }
-
 
   if (
     radius >= 5 &&
     totalPlaces < 25
   ) {
-
-    score =
-      Math.min(
-        score,
-        15
-      );
+    score = Math.min(
+      score,
+      15
+    );
   }
-
 
   if (
     radius >= 3 &&
     totalPlaces < 15
   ) {
-
-    score =
-      Math.min(
-        score,
-        15
-      );
+    score = Math.min(
+      score,
+      15
+    );
   }
 
+  let level = "Very Low";
 
-  let level =
-    "Very Low";
-
-
-  if (
-    score >= 75
-  ) {
-
-    level =
-      "High";
-
-  } else if (
-    score >= 50
-  ) {
-
-    level =
-      "Medium";
-
-  } else if (
-    score >= 25
-  ) {
-
-    level =
-      "Low";
+  if (score >= 75) {
+    level = "High";
+  } else if (score >= 50) {
+    level = "Medium";
+  } else if (score >= 25) {
+    level = "Low";
   }
-
 
   return {
-
     score,
-
     level,
   };
 }
-
-
-// ============================================================
-// CATEGORY-SPECIFIC DEMAND WEIGHTING
-// ============================================================
 
 function calculateDemandRelevance(
   demand,
   category
 ) {
-
   let rawScore = 0;
 
-
-  switch (
-    category
-  ) {
-
-    // --------------------------------------------------------
-    // PHARMACY
-    // --------------------------------------------------------
-
+  switch (category) {
+   
     case "pharmacy":
 
       rawScore =
@@ -887,11 +562,6 @@ function calculateDemandRelevance(
 
       break;
 
-
-    // --------------------------------------------------------
-    // GYM
-    // --------------------------------------------------------
-
     case "gym":
 
       rawScore =
@@ -902,12 +572,6 @@ function calculateDemandRelevance(
         demand.shopping * 1;
 
       break;
-
-
-    // --------------------------------------------------------
-    // CAFE
-    // --------------------------------------------------------
-
     case "cafe":
 
       rawScore =
@@ -920,11 +584,6 @@ function calculateDemandRelevance(
 
       break;
 
-
-    // --------------------------------------------------------
-    // RESTAURANT
-    // --------------------------------------------------------
-
     case "restaurant":
 
       rawScore =
@@ -936,11 +595,6 @@ function calculateDemandRelevance(
         demand.transport * 3;
 
       break;
-
-
-    // --------------------------------------------------------
-    // DEFAULT
-    // --------------------------------------------------------
 
     default:
 
@@ -957,1448 +611,1477 @@ function calculateDemandRelevance(
         demand.food;
   }
 
-
-  // Normalize to 0-100.
-  //
-  // This is a heuristic score, not measured market demand.
-
-  const normalized =
-    Math.min(
-      100,
-      Math.round(
-        rawScore / 2
-      )
-    );
-
+  const normalized = Math.min(
+    100,
+    Math.round(rawScore / 2)
+  );
 
   return normalized;
 }
 
 
-// ============================================================
-// ANALYZE LOCATION
-// ============================================================
 
-const analyzeLocation =
-  async (
-    req,
-    res
-  ) => {
-
-    try {
-
-      // ======================================================
-      // REQUEST
-      // ======================================================
-
-      const {
-        latitude,
-        longitude,
-        radius,
-        category,
-      } =
-        req.body;
+const analyzeLocation = async (
+  req,
+  res
+) => {
+  try {
 
 
-      // ======================================================
-      // VALIDATION
-      // ======================================================
-
-      if (
-        latitude === undefined ||
-        longitude === undefined ||
-        radius === undefined ||
-        !category
-      ) {
-
-        return res
-          .status(400)
-          .json({
-
-            success:
-              false,
-
-            message:
-              "latitude, longitude, radius and category are required.",
-
-          });
-      }
+    const {
+      latitude,
+      longitude,
+      radius,
+      category,
+    } = req.body;
 
 
-      const parsedLatitude =
-        Number(latitude);
+    if (
+      latitude === undefined ||
+      longitude === undefined ||
+      radius === undefined ||
+      !category
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "latitude, longitude, radius and category are required.",
+      });
+    }
 
 
-      const parsedLongitude =
-        Number(longitude);
+    const parsedLatitude =
+      Number(latitude);
+
+    const parsedLongitude =
+      Number(longitude);
+
+    const parsedRadius =
+      Number(radius);
 
 
-      const parsedRadius =
-        Number(radius);
+    if (
+      !Number.isFinite(
+        parsedLatitude
+      ) ||
+      !Number.isFinite(
+        parsedLongitude
+      ) ||
+      !Number.isFinite(
+        parsedRadius
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Latitude, longitude and radius must be valid numbers.",
+      });
+    }
 
 
-      if (
-        !Number.isFinite(
-          parsedLatitude
-        ) ||
-        !Number.isFinite(
-          parsedLongitude
-        ) ||
-        !Number.isFinite(
-          parsedRadius
+    if (
+      parsedLatitude < -90 ||
+      parsedLatitude > 90
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid latitude.",
+      });
+    }
+
+
+    if (
+      parsedLongitude < -180 ||
+      parsedLongitude > 180
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid longitude.",
+      });
+    }
+
+
+    if (
+      parsedRadius <= 0 ||
+      parsedRadius > 10
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Radius must be greater than 0 and less than or equal to 10 km.",
+      });
+    }
+
+
+    const normalizedCategory =
+      normalizeCategory(category);
+
+
+    console.log(
+      "======================================"
+    );
+
+    console.log(
+      "BizLens-AI Location Analysis"
+    );
+
+    console.log(
+      "======================================"
+    );
+
+    console.log(
+      `Latitude: ${parsedLatitude}`
+    );
+
+    console.log(
+      `Longitude: ${parsedLongitude}`
+    );
+
+    console.log(
+      `Radius: ${parsedRadius} km`
+    );
+
+    console.log(
+      `Requested Category: ${category}`
+    );
+
+    console.log(
+      `Normalized Category: ${normalizedCategory}`
+    );
+
+
+    // ========================================================
+    // FETCH OSM
+    // ========================================================
+
+    console.log(
+      "\nFetching OpenStreetMap data..."
+    );
+
+
+    const osmResult =
+      await getNearbyBusinesses(
+        parsedLatitude,
+        parsedLongitude,
+        parsedRadius
+      );
+
+
+    // ========================================================
+    // NORMALIZE OSM RESPONSE
+    // ========================================================
+    //
+    // Supports both:
+    //
+    // 1. Array response:
+    //    [...]
+    //
+    // 2. Object response:
+    //    {
+    //      places: [...],
+    //      dataQuality: {...}
+    //    }
+    //
+    // ========================================================
+
+    let places = [];
+    let osmQuality = {};
+
+    if (
+      Array.isArray(osmResult)
+    ) {
+      places = osmResult;
+
+      osmQuality =
+        osmResult.dataQuality ||
+        {};
+    } else if (
+      osmResult &&
+      typeof osmResult ===
+        "object"
+    ) {
+      places =
+        Array.isArray(
+          osmResult.places
         )
-      ) {
+          ? osmResult.places
+          : Array.isArray(
+              osmResult.businesses
+            )
+          ? osmResult.businesses
+          : [];
 
-        return res
-          .status(400)
-          .json({
-
-            success:
-              false,
-
-            message:
-              "Latitude, longitude and radius must be valid numbers.",
-
-          });
-      }
+      osmQuality =
+        osmResult.dataQuality ||
+        osmResult.statistics ||
+        {};
+    }
 
 
-      if (
-        parsedLatitude < -90 ||
-        parsedLatitude > 90
-      ) {
-
-        return res
-          .status(400)
-          .json({
-
-            success:
-              false,
-
-            message:
-              "Invalid latitude.",
-
-          });
-      }
+    if (
+      !Array.isArray(places)
+    ) {
+      return res.status(500).json({
+        success: false,
+        message:
+          "Invalid data received from OpenStreetMap.",
+      });
+    }
 
 
-      if (
-        parsedLongitude < -180 ||
-        parsedLongitude > 180
-      ) {
-
-        return res
-          .status(400)
-          .json({
-
-            success:
-              false,
-
-            message:
-              "Invalid longitude.",
-
-          });
-      }
+    console.log(
+      `Total OSM objects: ${places.length}`
+    );
 
 
-      if (
-        parsedRadius <= 0 ||
-        parsedRadius > 10
-      ) {
+    // ========================================================
+    // DATA COVERAGE
+    // ========================================================
 
-        return res
-          .status(400)
-          .json({
-
-            success:
-              false,
-
-            message:
-              "Radius must be greater than 0 and less than or equal to 10 km.",
-
-          });
-      }
+    const coverage =
+      calculateDataCoverage(
+        places.length,
+        parsedRadius
+      );
 
 
-      const normalizedCategory =
-        normalizeCategory(
-          category
+    console.log(
+      "\n---------- DATA COVERAGE ----------"
+    );
+
+    console.log(
+      `OSM objects: ${places.length}`
+    );
+
+    console.log(
+      `Businesses: ${
+        osmQuality.businesses ??
+        0
+      }`
+    );
+
+    console.log(
+      `Buildings: ${
+        osmQuality.buildings ??
+        0
+      }`
+    );
+
+    console.log(
+      `Roads: ${
+        osmQuality.roads ??
+        0
+      }`
+    );
+
+    console.log(
+      `Railways: ${
+        osmQuality.railways ??
+        0
+      }`
+    );
+
+    console.log(
+      `Landuse: ${
+        osmQuality.landuse ??
+        0
+      }`
+    );
+
+    console.log(
+      `Named places: ${
+        osmQuality.namedPlaces ??
+        0
+      }`
+    );
+
+    console.log(
+      `Data coverage: ${coverage.level}`
+    );
+
+    console.log(
+      `Coverage score: ${coverage.score}`
+    );
+
+
+    // ========================================================
+    // COMPETITOR DETECTION
+    // ========================================================
+
+    const detectedCompetitors =
+      places
+        .map((place) => {
+
+          const detection =
+            detectCompetitor(
+              place,
+              normalizedCategory
+            );
+
+          return {
+            ...place,
+            ...detection,
+          };
+        })
+        .filter(
+          (place) =>
+            place.isCompetitor
         );
 
 
-      // ======================================================
-      // LOG HEADER
-      // ======================================================
+    // ========================================================
+    // ADD DISTANCE
+    // ========================================================
 
-      console.log(
-        "======================================"
-      );
+    const competitorsWithDistance =
+      detectedCompetitors
+        .map((competitor) => {
 
-      console.log(
-        "BizLens-AI Location Analysis"
-      );
+          const competitorLatitude =
+            Number(
+              competitor.latitude ??
+              competitor.lat
+            );
 
-      console.log(
-        "======================================"
-      );
-
-      console.log(
-        `Latitude: ${parsedLatitude}`
-      );
-
-      console.log(
-        `Longitude: ${parsedLongitude}`
-      );
-
-      console.log(
-        `Radius: ${parsedRadius} km`
-      );
-
-      console.log(
-        `Requested Category: ${category}`
-      );
-
-      console.log(
-        `Normalized Category: ${normalizedCategory}`
-      );
+          const competitorLongitude =
+            Number(
+              competitor.longitude ??
+              competitor.lon ??
+              competitor.lng
+            );
 
 
-      // ======================================================
-      // FETCH OSM
-      // ======================================================
-
-      console.log(
-        "\nFetching OpenStreetMap data..."
-      );
-
-
-      const places =
-        await getNearbyBusinesses(
-          parsedLatitude,
-          parsedLongitude,
-          parsedRadius
-        );
+          if (
+            !Number.isFinite(
+              competitorLatitude
+            ) ||
+            !Number.isFinite(
+              competitorLongitude
+            )
+          ) {
+            return {
+              ...competitor,
+              distance: null,
+            };
+          }
 
 
-      if (
-        !Array.isArray(
-          places
+          const distance =
+            calculateDistance(
+              parsedLatitude,
+              parsedLongitude,
+              competitorLatitude,
+              competitorLongitude
+            );
+
+
+          return {
+            ...competitor,
+
+            latitude:
+              competitorLatitude,
+
+            longitude:
+              competitorLongitude,
+
+            distance:
+              Number(
+                distance.toFixed(3)
+              ),
+          };
+        })
+        .filter(
+          (place) =>
+            place.distance !== null
         )
-      ) {
-
-        return res
-          .status(500)
-          .json({
-
-            success:
-              false,
-
-            message:
-              "Invalid data received from OpenStreetMap.",
-
-          });
-      }
-
-
-      console.log(
-        `Total OSM objects: ${places.length}`
-      );
-
-
-      // ======================================================
-      // OSM DATA QUALITY
-      // ======================================================
-
-      const osmQuality =
-        places.dataQuality || {};
-
-
-      const coverage =
-        calculateDataCoverage(
-          places.length,
-          parsedRadius
+        .sort(
+          (a, b) =>
+            a.distance -
+            b.distance
         );
 
 
-      console.log(
-        "\n---------- DATA COVERAGE ----------"
-      );
+    // ========================================================
+    // COMPETITION METRICS
+    // ========================================================
 
-      console.log(
-        `OSM objects: ${places.length}`
-      );
-
-      console.log(
-        `Businesses: ${osmQuality.businesses ?? 0}`
-      );
-
-      console.log(
-        `Buildings: ${osmQuality.buildings ?? 0}`
-      );
-
-      console.log(
-        `Roads: ${osmQuality.roads ?? 0}`
-      );
-
-      console.log(
-        `Data coverage: ${coverage.level}`
-      );
-
-      console.log(
-        `Coverage score: ${coverage.score}`
-      );
+    const competitorCount =
+      competitorsWithDistance.length;
 
 
-      // ======================================================
-      // COMPETITOR DETECTION
-      // ======================================================
-
-      const detectedCompetitors =
-        places
-          .map(
-            place => {
-
-              const detection =
-                detectCompetitor(
-                  place,
-                  normalizedCategory
-                );
+    const analysisArea =
+      Math.PI *
+      parsedRadius *
+      parsedRadius;
 
 
-              return {
-
-                ...place,
-
-                ...detection,
-
-              };
-            }
+    const competitionDensity =
+      analysisArea > 0
+        ? Number(
+            (
+              competitorCount /
+              analysisArea
+            ).toFixed(2)
           )
-          .filter(
-            place =>
-              place.isCompetitor
-          );
+        : 0;
 
 
-      // ======================================================
-      // ADD DISTANCE
-      // ======================================================
-
-      const competitorsWithDistance =
-        detectedCompetitors
-          .map(
-            competitor => {
-
-              const distance =
-                calculateDistance(
-                  parsedLatitude,
-                  parsedLongitude,
-                  competitor.latitude,
-                  competitor.longitude
-                );
+    const within500m =
+      competitorsWithDistance.filter(
+        (place) =>
+          place.distance <= 0.5
+      ).length;
 
 
-              return {
+    const within1km =
+      competitorsWithDistance.filter(
+        (place) =>
+          place.distance <= 1
+      ).length;
 
-                ...competitor,
 
-                distance:
-                  Number(
-                    distance.toFixed(3)
-                  ),
+    const within2km =
+      competitorsWithDistance.filter(
+        (place) =>
+          place.distance <= 2
+      ).length;
 
-              };
-            }
+
+    const nearestCompetitor =
+      competitorsWithDistance.length
+        ? competitorsWithDistance[0]
+        : null;
+
+
+    const averageCompetitorDistance =
+      competitorsWithDistance.length
+        ? Number(
+            (
+              competitorsWithDistance.reduce(
+                (sum, place) =>
+                  sum +
+                  place.distance,
+                0
+              ) /
+              competitorsWithDistance.length
+            ).toFixed(3)
           )
-          .sort(
-            (a, b) =>
-              a.distance -
-              b.distance
-          );
+        : null;
 
 
-      // ======================================================
-      // COMPETITION METRICS
-      // ======================================================
+    // ========================================================
+    // COMPETITION RELIABILITY
+    // ========================================================
 
-      const competitorCount =
-        competitorsWithDistance.length;
-
-
-      const analysisArea =
-        Math.PI *
-        parsedRadius *
-        parsedRadius;
+    let competitionReliability =
+      "Low";
 
 
-      const competitionDensity =
-        analysisArea > 0
-
-          ? Number(
-              (
-                competitorCount /
-                analysisArea
-              ).toFixed(2)
-            )
-
-          : 0;
+    if (
+      coverage.score >= 75
+    ) {
+      competitionReliability =
+        "Medium";
+    }
 
 
-      const within500m =
-        competitorsWithDistance.filter(
-          place =>
-            place.distance <=
-            0.5
-        ).length;
+    if (
+      coverage.score >= 85 &&
+      Number(
+        osmQuality.businesses ??
+        0
+      ) >= 10
+    ) {
+      competitionReliability =
+        "High";
+    }
 
 
-      const within1km =
-        competitorsWithDistance.filter(
-          place =>
-            place.distance <=
-            1
-        ).length;
-
-
-      const within2km =
-        competitorsWithDistance.filter(
-          place =>
-            place.distance <=
-            2
-        ).length;
-
-
-      const nearestCompetitor =
-        competitorsWithDistance.length
-          ? competitorsWithDistance[0]
-          : null;
-
-
-      const averageCompetitorDistance =
-        competitorsWithDistance.length
-
-          ? Number(
-              (
-                competitorsWithDistance.reduce(
-                  (
-                    sum,
-                    place
-                  ) =>
-                    sum +
-                    place.distance,
-                  0
-                ) /
-                competitorsWithDistance.length
-              ).toFixed(3)
-            )
-
-          : null;
-
-
-      // ======================================================
-      // COMPETITION RELIABILITY
-      // ======================================================
-
-      let competitionReliability =
-        "Low";
-
+    if (
+      competitorCount === 0
+    ) {
 
       if (
-        coverage.score >= 75
+        coverage.score >= 75 &&
+        Number(
+          osmQuality.businesses ??
+          0
+        ) >= 10
       ) {
-
         competitionReliability =
           "Medium";
-      }
-
-
-      if (
-        coverage.score >= 85 &&
-        osmQuality.businesses >= 10
-      ) {
-
+      } else {
         competitionReliability =
-          "High";
+          "Low";
       }
+    }
 
 
-      // Important:
-      //
-      // Zero competitors does NOT automatically mean
-      // high confidence.
+    const competition = {
 
-      if (
-        competitorCount === 0
-      ) {
+      count:
+        competitorCount,
+
+      density:
+        competitionDensity,
+
+      within500m,
+
+      within1km,
+
+      within2km,
+
+      nearestDistance:
+        nearestCompetitor
+          ? nearestCompetitor.distance
+          : null,
+
+      averageDistance:
+        averageCompetitorDistance,
+
+      businesses:
+        competitorsWithDistance,
+
+      reliability:
+        competitionReliability,
+    };
+
+
+    // ========================================================
+    // DEMAND
+    // ========================================================
+
+    const demand = {
+
+      education: 0,
+
+      offices: 0,
+
+      hospitals: 0,
+
+      clinics: 0,
+
+      pharmacies: 0,
+
+      shopping: 0,
+
+      transport: 0,
+
+      tourism: 0,
+
+      residential: 0,
+
+      sports: 0,
+
+      food: 0,
+
+      entertainment: 0,
+    };
+
+
+    // ========================================================
+    // ACCESSIBILITY
+    // ========================================================
+
+    const accessibility = {
+
+      transport: 0,
+
+      roads: 0,
+
+      parking: 0,
+
+      walkable: 0,
+
+      crossings: 0,
+
+      cycleways: 0,
+    };
+
+
+    // ========================================================
+    // OBJECT ANALYSIS
+    // ========================================================
+
+    places.forEach(
+      (place) => {
+
+        const tags =
+          place.tags || {};
+
+
+        const amenity =
+          normalizeText(
+            tags.amenity
+          );
+
+
+        const shop =
+          normalizeText(
+            tags.shop
+          );
+
+
+        const office =
+          normalizeText(
+            tags.office
+          );
+
+
+        const tourism =
+          normalizeText(
+            tags.tourism
+          );
+
+
+        const building =
+          normalizeText(
+            tags.building
+          );
+
+
+        const highway =
+          normalizeText(
+            tags.highway
+          );
+
+
+        const leisure =
+          normalizeText(
+            tags.leisure
+          );
+
+
+        const sport =
+          normalizeText(
+            tags.sport
+          );
+
+
+        const healthcare =
+          normalizeText(
+            tags.healthcare
+          );
+
+
+        const publicTransport =
+          normalizeText(
+            tags.public_transport
+          );
+
+
+        const railway =
+          normalizeText(
+            tags.railway
+          );
+
+
+        // ====================================================
+        // EDUCATION
+        // ====================================================
 
         if (
-          coverage.score >= 75 &&
-          osmQuality.businesses >= 10
+          [
+            "school",
+            "college",
+            "university",
+            "kindergarten",
+            "language_school",
+          ].includes(
+            amenity
+          )
+        ) {
+          demand.education++;
+        }
+
+
+        // ====================================================
+        // OFFICES
+        // ====================================================
+
+        if (
+          office ||
+          [
+            "office",
+            "commercial",
+          ].includes(
+            building
+          )
+        ) {
+          demand.offices++;
+        }
+
+
+        // ====================================================
+        // HOSPITAL
+        // ====================================================
+
+        if (
+          amenity ===
+            "hospital" ||
+          healthcare ===
+            "hospital"
+        ) {
+          demand.hospitals++;
+        }
+
+
+        // ====================================================
+        // CLINICS
+        // ====================================================
+
+        if (
+          [
+            "clinic",
+            "doctors",
+            "dentist",
+          ].includes(
+            amenity
+          ) ||
+          [
+            "clinic",
+            "doctor",
+            "dentist",
+          ].includes(
+            healthcare
+          )
+        ) {
+          demand.clinics++;
+        }
+
+
+        // ====================================================
+        // PHARMACIES
+        // ====================================================
+
+        if (
+          [
+            "pharmacy",
+            "chemist",
+            "medical",
+            "medical_supply",
+            "drugstore",
+          ].includes(
+            shop
+          ) ||
+          amenity ===
+            "pharmacy" ||
+          healthcare ===
+            "pharmacy"
+        ) {
+          demand.pharmacies++;
+        }
+
+
+        // ====================================================
+        // SHOPPING
+        // ====================================================
+
+        if (
+          shop ||
+          [
+            "marketplace",
+            "market",
+          ].includes(
+            amenity
+          )
+        ) {
+          demand.shopping++;
+        }
+
+
+        // ====================================================
+        // TRANSPORT
+        // ====================================================
+
+        if (
+          [
+            "bus_station",
+            "bus_stop",
+            "taxi",
+            "train_station",
+            "subway",
+            "tram_stop",
+          ].includes(
+            amenity
+          ) ||
+          [
+            "platform",
+            "station",
+          ].includes(
+            publicTransport
+          ) ||
+          [
+            "station",
+            "halt",
+            "tram_stop",
+            "subway",
+            "subway_entrance",
+          ].includes(
+            railway
+          ) ||
+          highway ===
+            "bus_stop"
         ) {
 
-          competitionReliability =
-            "Medium";
+          demand.transport++;
 
-        } else {
-
-          competitionReliability =
-            "Low";
+          accessibility.transport++;
         }
-      }
 
 
-      const competition = {
-
-        count:
-          competitorCount,
-
-        density:
-          competitionDensity,
-
-        within500m,
-
-        within1km,
-
-        within2km,
-
-        nearestDistance:
-          nearestCompetitor
-            ? nearestCompetitor.distance
-            : null,
-
-        averageDistance:
-          averageCompetitorDistance,
-
-        businesses:
-          competitorsWithDistance,
-
-        reliability:
-          competitionReliability,
-      };
-
-
-      // ======================================================
-      // DEMAND
-      // ======================================================
-
-      const demand = {
-
-        education: 0,
-
-        offices: 0,
-
-        hospitals: 0,
-
-        clinics: 0,
-
-        pharmacies: 0,
-
-        shopping: 0,
-
-        transport: 0,
-
-        tourism: 0,
-
-        residential: 0,
-
-        sports: 0,
-
-        food: 0,
-
-        entertainment: 0,
-      };
-
-
-      // ======================================================
-      // ACCESSIBILITY
-      // ======================================================
-
-      const accessibility = {
-
-        transport: 0,
-
-        roads: 0,
-
-        parking: 0,
-
-        walkable: 0,
-
-        crossings: 0,
-
-        cycleways: 0,
-      };
-
-
-      // ======================================================
-      // OBJECT ANALYSIS
-      // ======================================================
-
-      places.forEach(
-        place => {
-
-          const tags =
-            place.tags || {};
-
-
-          const amenity =
-            normalizeText(
-              tags.amenity
-            );
-
-
-          const shop =
-            normalizeText(
-              tags.shop
-            );
-
-
-          const office =
-            normalizeText(
-              tags.office
-            );
-
-
-          const tourism =
-            normalizeText(
-              tags.tourism
-            );
-
-
-          const building =
-            normalizeText(
-              tags.building
-            );
-
-
-          const highway =
-            normalizeText(
-              tags.highway
-            );
-
-
-          const leisure =
-            normalizeText(
-              tags.leisure
-            );
-
-
-          const sport =
-            normalizeText(
-              tags.sport
-            );
-
-
-          const healthcare =
-            normalizeText(
-              tags.healthcare
-            );
-
-
-          const publicTransport =
-            normalizeText(
-              tags.public_transport
-            );
-
-
-          const railway =
-            normalizeText(
-              tags.railway
-            );
-
-
-          // ==================================================
-          // EDUCATION
-          // ==================================================
-
-          if (
-            [
-              "school",
-              "college",
-              "university",
-              "kindergarten",
-              "language_school",
-            ].includes(
-              amenity
-            )
-          ) {
-
-            demand.education++;
-          }
-
-
-          // ==================================================
-          // OFFICES
-          // ==================================================
-
-          if (
-            office ||
-            [
-              "office",
-              "commercial",
-            ].includes(
-              building
-            )
-          ) {
-
-            demand.offices++;
-          }
-
-
-          // ==================================================
-          // HOSPITAL
-          // ==================================================
-
-          if (
-            amenity ===
-              "hospital" ||
-            healthcare ===
-              "hospital"
-          ) {
-
-            demand.hospitals++;
-          }
-
-
-          // ==================================================
-          // CLINICS
-          // ==================================================
-
-          if (
-            [
-              "clinic",
-              "doctors",
-              "dentist",
-            ].includes(
-              amenity
-            ) ||
-            [
-              "clinic",
-              "doctor",
-              "dentist",
-            ].includes(
-              healthcare
-            )
-          ) {
-
-            demand.clinics++;
-          }
-
-
-          // ==================================================
-          // PHARMACIES
-          // ==================================================
-
-          if (
-            shop ===
-              "pharmacy" ||
-            shop ===
-              "chemist" ||
-            shop ===
-              "medical" ||
-            shop ===
-              "medical_supply" ||
-            shop ===
-              "drugstore" ||
-            amenity ===
-              "pharmacy" ||
-            healthcare ===
-              "pharmacy"
-          ) {
-
-            demand.pharmacies++;
-          }
-
-
-          // ==================================================
-          // SHOPPING
-          // ==================================================
-
-          if (
-            shop ||
-            [
-              "marketplace",
-              "market",
-            ].includes(
-              amenity
-            )
-          ) {
-
-            demand.shopping++;
-          }
-
-
-          // ==================================================
-          // TRANSPORT
-          // ==================================================
-
-          if (
-            [
-              "bus_station",
-              "bus_stop",
-              "taxi",
-              "train_station",
-              "subway",
-              "tram_stop",
-            ].includes(
-              amenity
-            ) ||
-
-            [
-              "platform",
-              "station",
-            ].includes(
-              publicTransport
-            ) ||
-
-            [
-              "station",
-              "halt",
-              "tram_stop",
-              "subway",
-              "subway_entrance",
-            ].includes(
-              railway
-            ) ||
-
-            highway ===
-              "bus_stop"
-          ) {
-
-            demand.transport++;
-
-            accessibility.transport++;
-          }
-
-
-          // ==================================================
-          // TOURISM
-          // ==================================================
-
-          if (
-            tourism
-          ) {
-
-            demand.tourism++;
-          }
-
-
-          // ==================================================
-          // RESIDENTIAL
-          // ==================================================
-
-          if (
-            [
-              "apartments",
-              "residential",
-              "house",
-              "dormitory",
-              "terrace",
-              "detached",
-              "semidetached_house",
-            ].includes(
-              building
-            )
-          ) {
-
-            demand.residential++;
-          }
-
-
-          // ==================================================
-          // SPORTS
-          // ==================================================
-
-          if (
-            leisure ===
-              "sports_centre" ||
-            leisure ===
-              "fitness_centre" ||
-            sport
-          ) {
-
-            demand.sports++;
-          }
-
-
-          // ==================================================
-          // FOOD
-          // ==================================================
-
-          if (
-            [
-              "restaurant",
-              "cafe",
-              "fast_food",
-              "food_court",
-            ].includes(
-              amenity
-            )
-          ) {
-
-            demand.food++;
-          }
-
-
-          // ==================================================
-          // ENTERTAINMENT
-          // ==================================================
-
-          if (
-            [
-              "cinema",
-              "theatre",
-              "arts_centre",
-              "nightclub",
-            ].includes(
-              amenity
-            ) ||
-
-            [
-              "amusement_arcade",
-              "water_park",
-              "park",
-            ].includes(
-              leisure
-            )
-          ) {
-
-            demand.entertainment++;
-          }
-
-
-          // ==================================================
-          // PARKING
-          // ==================================================
-
-          if (
-            amenity ===
-            "parking"
-          ) {
-
-            accessibility.parking++;
-          }
-
-
-          // ==================================================
-          // ROADS
-          // ==================================================
-
-          if (
+        // ====================================================
+        // TOURISM
+        // ====================================================
+
+        if (
+          tourism
+        ) {
+          demand.tourism++;
+        }
+
+
+        // ====================================================
+        // RESIDENTIAL
+        // ====================================================
+
+        if (
+          [
+            "apartments",
+            "residential",
+            "house",
+            "dormitory",
+            "terrace",
+            "detached",
+            "semidetached_house",
+          ].includes(
+            building
+          )
+        ) {
+          demand.residential++;
+        }
+        if (
+          leisure ===
+            "sports_centre" ||
+          leisure ===
+            "fitness_centre" ||
+          sport
+        ) {
+          demand.sports++;
+        }
+
+        if (
+          [
+            "restaurant",
+            "cafe",
+            "fast_food",
+            "food_court",
+          ].includes(
+            amenity
+          )
+        ) {
+          demand.food++;
+        }
+
+        if (
+          [
+            "cinema",
+            "theatre",
+            "arts_centre",
+            "nightclub",
+          ].includes(
+            amenity
+          ) ||
+          [
+            "amusement_arcade",
+            "water_park",
+            "park",
+          ].includes(
+            leisure
+          )
+        ) {
+          demand.entertainment++;
+        }
+
+
+        if (
+          amenity ===
+          "parking"
+        ) {
+          accessibility.parking++;
+        }
+        if (
+          highway
+        ) {
+          accessibility.roads++;
+        }
+        if (
+          [
+            "footway",
+            "pedestrian",
+            "path",
+            "living_street",
+            "steps",
+          ].includes(
             highway
-          ) {
-
-            accessibility.roads++;
-          }
-
-
-          // ==================================================
-          // WALKABILITY
-          // ==================================================
-
-          if (
-            [
-              "footway",
-              "pedestrian",
-              "path",
-              "living_street",
-              "steps",
-            ].includes(
-              highway
-            )
-          ) {
-
-            accessibility.walkable++;
-          }
-
-
-          // ==================================================
-          // CROSSINGS
-          // ==================================================
-
-          if (
-            highway ===
-              "crossing" ||
-            tags.crossing
-          ) {
-
-            accessibility.crossings++;
-          }
-
-
-          // ==================================================
-          // CYCLEWAYS
-          // ==================================================
-
-          if (
-            highway ===
-            "cycleway"
-          ) {
-
-            accessibility.cycleways++;
-          }
-
+          )
+        ) {
+          accessibility.walkable++;
         }
+
+        if (
+          highway ===
+            "crossing" ||
+          tags.crossing
+        ) {
+          accessibility.crossings++;
+        }
+
+        if (
+          highway ===
+          "cycleway"
+        ) {
+          accessibility.cycleways++;
+        }
+
+      }
+    );
+
+    const categoryDemandScore =
+      calculateDemandRelevance(
+        demand,
+        normalizedCategory
       );
 
+    const scoring =
+      await calculateBusinessAnalysis({
 
-      // ======================================================
-      // CATEGORY-SPECIFIC DEMAND
-      // ======================================================
+        category:
+          normalizedCategory,
 
-      const categoryDemandScore =
-        calculateDemandRelevance(
-          demand,
-          normalizedCategory
+        competition,
+
+        demand,
+
+        categoryDemandScore,
+
+        totalPlaces:
+          places.length,
+
+        accessibility,
+
+        dataCoverage:
+          coverage.score,
+      });
+
+    const savedAnalysis =
+      await Analysis.create({
+
+        user:
+          req.user.userId,
+
+        latitude:
+          parsedLatitude,
+
+        longitude:
+          parsedLongitude,
+
+        radius:
+          parsedRadius,
+
+        category:
+          normalizedCategory,
+
+        successScore:
+          scoring.successScore,
+
+        competitionScore:
+          scoring.competitionScore,
+
+        demandScore:
+          scoring.demandScore,
+
+        riskScore:
+          scoring.riskScore,
+
+        accessibilityScore:
+          scoring.accessibilityScore,
+
+        locationAttractiveness:
+          scoring.locationAttractiveness,
+
+        confidenceScore:
+          scoring.confidenceScore,
+
+        successLevel:
+          scoring.successLevel,
+
+        riskLevel:
+          scoring.riskLevel,
+
+        confidence:
+          scoring.confidence,
+
+        recommendations:
+          scoring.recommendations,
+      });
+
+    console.log(
+      "\n---------- COMPETITION ----------"
+    );
+
+    console.log(
+      `Competitors: ${competitorCount}`
+    );
+
+    console.log(
+      `Competition density: ${competitionDensity}`
+    );
+
+    console.log(
+      `Within 500m: ${within500m}`
+    );
+
+    console.log(
+      `Within 1km: ${within1km}`
+    );
+
+    console.log(
+      `Within 2km: ${within2km}`
+    );
+
+    console.log(
+      `Nearest competitor: ${
+        nearestCompetitor
+          ? `${nearestCompetitor.name || "Unnamed"} (${nearestCompetitor.distance} km)`
+          : "None found"
+      }`
+    );
+
+    console.log(
+      `Average competitor distance: ${
+        averageCompetitorDistance ??
+        "N/A"
+      }`
+    );
+
+    console.log(
+      `Competition reliability: ${competitionReliability}`
+    );
+
+    console.log(
+      `Competition score: ${scoring.competitionScore}`
+    );
+
+    console.log(
+      "\n---------- DEMAND ----------"
+    );
+
+    Object.entries(
+      demand
+    ).forEach(
+      ([key, value]) => {
+
+        console.log(
+          `${key}: ${value}`
         );
 
+      }
+    );
 
-      // ======================================================
-      // SCORING SERVICE
-      // ======================================================
 
-      const scoring =
-        await calculateBusinessAnalysis({
+    console.log(
+      `Category demand score: ${categoryDemandScore}`
+    );
 
-          category:
+    console.log(
+      `Demand score: ${scoring.demandScore}`
+    );
+
+
+    console.log(
+      "\n---------- ACCESSIBILITY ----------"
+    );
+
+    Object.entries(
+      accessibility
+    ).forEach(
+      ([key, value]) => {
+
+        console.log(
+          `${key}: ${value}`
+        );
+
+      }
+    );
+
+
+    console.log(
+      `Accessibility score: ${scoring.accessibilityScore}`
+    );
+
+    console.log(
+      "\n---------- BUSINESS SUCCESS ----------"
+    );
+
+    console.log(
+      `Demand: ${scoring.demandScore} × 30%`
+    );
+
+    console.log(
+      `Competition: ${scoring.competitionScore} × 25%`
+    );
+
+    console.log(
+      `Accessibility: ${scoring.accessibilityScore} × 15%`
+    );
+
+    console.log(
+      `Location attractiveness: ${scoring.locationAttractiveness} × 15%`
+    );
+
+    console.log(
+      `Risk safety: ${scoring.riskScore} × 15%`
+    );
+
+    console.log(
+      `Business Success Score: ${scoring.successScore}`
+    );
+
+    console.log(
+      `Success Level: ${scoring.successLevel}`
+    );
+
+    console.log(
+      `Confidence: ${scoring.confidence}`
+    );
+
+    console.log(
+      `Confidence Score: ${scoring.confidenceScore}`
+    );
+
+    console.log(
+      `Risk Score: ${scoring.riskScore}`
+    );
+
+    console.log(
+      `Risk Level: ${scoring.riskLevel}`
+    );
+
+    console.log(
+      `Analysis ID: ${savedAnalysis._id}`
+    );
+
+    console.log(
+      "======================================"
+    );
+
+    return res
+      .status(200)
+      .json({
+
+        success: true,
+
+        message:
+          "Location analysis completed successfully.",
+
+        data: {
+
+          analysisId:
+            savedAnalysis._id,
+          location: {
+
+            latitude:
+              parsedLatitude,
+
+            longitude:
+              parsedLongitude,
+          },
+
+          radius:
+            parsedRadius,
+
+          requestedCategory:
+            category,
+
+          normalizedCategory:
             normalizedCategory,
-
-          competition,
-
-          demand,
 
           totalPlaces:
             places.length,
 
-          accessibility,
+          osmStatistics: {
 
-          dataCoverage:
-            coverage.score,
-
-        });
-
-
-      // ======================================================
-      // LOG COMPETITION
-      // ======================================================
-
-      console.log(
-        "\n---------- COMPETITION ----------"
-      );
-
-      console.log(
-        `Competitors: ${competitorCount}`
-      );
-
-      console.log(
-        `Competition density: ${competitionDensity}`
-      );
-
-      console.log(
-        `Within 500m: ${within500m}`
-      );
-
-      console.log(
-        `Within 1km: ${within1km}`
-      );
-
-      console.log(
-        `Within 2km: ${within2km}`
-      );
-
-      console.log(
-        `Nearest competitor: ${
-          nearestCompetitor
-            ? `${nearestCompetitor.name} (${nearestCompetitor.distance} km)`
-            : "None found"
-        }`
-      );
-
-      console.log(
-        `Average competitor distance: ${
-          averageCompetitorDistance ??
-          "N/A"
-        }`
-      );
-
-      console.log(
-        `Competition reliability: ${competitionReliability}`
-      );
-
-      console.log(
-        `Competition score: ${scoring.competitionScore}`
-      );
-
-
-      // ======================================================
-      // LOG DEMAND
-      // ======================================================
-
-      console.log(
-        "\n---------- DEMAND ----------"
-      );
-
-
-      Object.entries(
-        demand
-      ).forEach(
-        ([key, value]) => {
-
-          console.log(
-            `${key}: ${value}`
-          );
-        }
-      );
-
-
-      console.log(
-        `Category demand score: ${categoryDemandScore}`
-      );
-
-      console.log(
-        `Demand score: ${scoring.demandScore}`
-      );
-
-
-      // ======================================================
-      // LOG ACCESSIBILITY
-      // ======================================================
-
-      console.log(
-        "\n---------- ACCESSIBILITY ----------"
-      );
-
-
-      Object.entries(
-        accessibility
-      ).forEach(
-        ([key, value]) => {
-
-          console.log(
-            `${key}: ${value}`
-          );
-        }
-      );
-
-
-      console.log(
-        `Accessibility score: ${scoring.accessibilityScore}`
-      );
-
-
-      // ======================================================
-      // SUCCESS
-      // ======================================================
-
-      console.log(
-        "\n---------- BUSINESS SUCCESS ----------"
-      );
-
-
-      console.log(
-        `Demand: ${scoring.demandScore} × 30%`
-      );
-
-      console.log(
-        `Competition: ${scoring.competitionScore} × 25%`
-      );
-
-      console.log(
-        `Accessibility: ${scoring.accessibilityScore} × 15%`
-      );
-
-      console.log(
-        `Location attractiveness: ${scoring.locationAttractiveness} × 15%`
-      );
-
-      console.log(
-        `Risk safety: ${scoring.riskSafetyScore} × 15%`
-      );
-
-      console.log(
-        `Business Success Score: ${scoring.successScore}`
-      );
-
-      console.log(
-        `Success Level: ${scoring.successLevel}`
-      );
-
-      console.log(
-        `Confidence: ${scoring.confidence}`
-      );
-
-      console.log(
-        `Confidence Score: ${scoring.confidenceScore}`
-      );
-
-      console.log(
-        `Risk Score: ${scoring.riskScore}`
-      );
-
-      console.log(
-        `Risk Level: ${scoring.riskLevel}`
-      );
-
-      console.log(
-        "======================================"
-      );
-
-
-      // ======================================================
-      // RESPONSE
-      // ======================================================
-
-      return res
-        .status(200)
-        .json({
-
-          success:
-            true,
-
-          message:
-            "Location analysis completed successfully.",
-
-
-          data: {
-
-            // ==================================================
-            // LOCATION
-            // ==================================================
-
-            location: {
-
-              latitude:
-                parsedLatitude,
-
-              longitude:
-                parsedLongitude,
-            },
-
-
-            radius:
-              parsedRadius,
-
-
-            requestedCategory:
-              category,
-
-
-            normalizedCategory:
-              normalizedCategory,
-
-
-            // ==================================================
-            // OSM
-            // ==================================================
-
-            totalPlaces:
+            totalObjects:
               places.length,
 
-
-            osmStatistics: {
-
-              totalObjects:
-                places.length,
-
-              businesses:
-                osmQuality.businesses ??
-                0,
-
-              buildings:
-                osmQuality.buildings ??
-                0,
-
-              roads:
-                osmQuality.roads ??
-                0,
-
-              railways:
-                osmQuality.railways ??
-                0,
-
-              landuse:
-                osmQuality.landuse ??
-                0,
-
-              namedPlaces:
-                osmQuality.namedPlaces ??
-                0,
-            },
-
-
-            dataCoverage: {
-
-              score:
-                coverage.score,
-
-              level:
-                coverage.level,
-
-              description:
-                "Estimated completeness of returned OpenStreetMap records. It does not represent complete real-world business coverage.",
-
-            },
-
-
-            // ==================================================
-            // COMPETITION
-            // ==================================================
-
-            competitors: {
-
-              count:
-                competitorCount,
-
-              density:
-                competitionDensity,
-
-              within500m,
-
-              within1km,
-
-              within2km,
-
-              nearest:
-                nearestCompetitor,
-
-              nearestDistance:
-                nearestCompetitor
-                  ? nearestCompetitor.distance
-                  : null,
-
-              averageDistance:
-                averageCompetitorDistance,
-
-              reliability:
-                competitionReliability,
-
-              score:
-                scoring.competitionScore,
-
-            },
-
-
-            competitorBusinesses:
-              competitorsWithDistance,
-
-
-            // ==================================================
-            // DEMAND
-            // ==================================================
-
-            demand: {
-
-              ...demand,
-
-              categoryDemandScore,
-
-              score:
-                scoring.demandScore,
-
-            },
-
-
-            // ==================================================
-            // ACCESSIBILITY
-            // ==================================================
-
-            accessibility: {
-
-              ...accessibility,
-
-              score:
-                scoring.accessibilityScore,
-
-            },
-
-
-            // ==================================================
-            // LOCATION
-            // ==================================================
-
-            locationAttractiveness:
-              scoring.locationAttractiveness,
-
-
-            // ==================================================
-            // BUSINESS SUCCESS
-            // ==================================================
-
-            businessSuccess: {
-
-              score:
-                scoring.successScore,
-
-              level:
-                scoring.successLevel,
-
-              confidence:
-                scoring.confidence,
-
-              confidenceScore:
-                scoring.confidenceScore,
-
-              confidenceReason:
-                scoring.confidenceReason,
-            },
-
-
-            // ==================================================
-            // RISK
-            // ==================================================
-
-            risk: {
-
-              score:
-                scoring.riskScore,
-
-              safetyScore:
-                scoring.riskSafetyScore,
-
-              level:
-                scoring.riskLevel,
-            },
-
-
-            // ==================================================
-            // RECOMMENDATIONS
-            // ==================================================
-
-            recommendations:
-              scoring.recommendations,
-
+            businesses:
+              osmQuality.businesses ??
+              0,
+
+            buildings:
+              osmQuality.buildings ??
+              0,
+
+            roads:
+              osmQuality.roads ??
+              0,
+
+            railways:
+              osmQuality.railways ??
+              0,
+
+            landuse:
+              osmQuality.landuse ??
+              0,
+
+            namedPlaces:
+              osmQuality.namedPlaces ??
+              0,
           },
-        });
+          dataCoverage: {
 
-    } catch (
+            score:
+              coverage.score,
+
+            level:
+              coverage.level,
+
+            description:
+              "Estimated completeness of returned OpenStreetMap records. It does not represent complete real-world business coverage.",
+          },
+          competitors: {
+
+            count:
+              competitorCount,
+
+            density:
+              competitionDensity,
+
+            within500m,
+
+            within1km,
+
+            within2km,
+
+            nearest:
+              nearestCompetitor,
+
+            nearestDistance:
+              nearestCompetitor
+                ? nearestCompetitor.distance
+                : null,
+
+            averageDistance:
+              averageCompetitorDistance,
+
+            reliability:
+              competitionReliability,
+
+            score:
+              scoring.competitionScore,
+          },
+
+
+          competitorBusinesses:
+            competitorsWithDistance,
+          demand: {
+
+            ...demand,
+
+            categoryDemandScore,
+
+            score:
+              scoring.demandScore,
+          },
+
+          accessibility: {
+
+            ...accessibility,
+
+            score:
+              scoring.accessibilityScore,
+          },
+
+
+          locationAttractiveness:
+            scoring.locationAttractiveness,
+
+          businessSuccess: {
+
+            score:
+              scoring.successScore,
+
+            level:
+              scoring.successLevel,
+
+            confidence:
+              scoring.confidence,
+
+            confidenceScore:
+              scoring.confidenceScore,
+
+            confidenceReason:
+              scoring.confidenceReason,
+          },
+          risk: {
+
+            score:
+              scoring.riskScore,
+
+            level:
+              scoring.riskLevel,
+          },
+
+          recommendations:
+            scoring.recommendations,
+        },
+      });
+
+  } catch (error) {
+
+    console.error(
+      "Analysis controller error:",
       error
-    ) {
+    );
 
-      console.error(
-        "Analysis controller error:",
-        error
-      );
+    return res
+      .status(500)
+      .json({
 
+        success: false,
 
-      return res
-        .status(500)
-        .json({
+        message:
+          error.message ||
+          "Location analysis failed.",
+      });
+  }
+};
+const getAnalysisStats = async (
+  req,
+  res
+) => {
 
-          success:
-            false,
+  try {
+    const userId =
+      req.user.userId;
+    const stats =
+      await Analysis.aggregate([
 
-          message:
-            error.message ||
-            "Location analysis failed.",
+        {
+          $match: {
+            user: userId,
+          },
+        },
 
-        });
-    }
-  };
+        {
+          $group: {
 
+            _id: null,
 
-// ============================================================
-// EXPORT
-// ============================================================
+            totalAnalyses: {
+              $sum: 1,
+            },
 
+            averageSuccessScore: {
+              $avg:
+                "$successScore",
+            },
+
+            averageCompetitionScore: {
+              $avg:
+                "$competitionScore",
+            },
+
+            averageDemandScore: {
+              $avg:
+                "$demandScore",
+            },
+
+            averageRiskScore: {
+              $avg:
+                "$riskScore",
+            },
+          },
+        },
+
+      ]);
+    const result =
+      stats.length
+        ? stats[0]
+        : {
+            totalAnalyses: 0,
+            averageSuccessScore: 0,
+            averageCompetitionScore: 0,
+            averageDemandScore: 0,
+            averageRiskScore: 0,
+          };
+    return res
+      .status(200)
+      .json({
+
+        success: true,
+
+        data: {
+
+          totalAnalyses:
+            result.totalAnalyses,
+
+          averageSuccessScore:
+            Number(
+              (
+                result.averageSuccessScore ||
+                0
+              ).toFixed(2)
+            ),
+
+          averageCompetitionScore:
+            Number(
+              (
+                result.averageCompetitionScore ||
+                0
+              ).toFixed(2)
+            ),
+
+          averageDemandScore:
+            Number(
+              (
+                result.averageDemandScore ||
+                0
+              ).toFixed(2)
+            ),
+
+          averageRiskScore:
+            Number(
+              (
+                result.averageRiskScore ||
+                0
+              ).toFixed(2)
+            ),
+        },
+      });
+
+  } catch (error) {
+
+    console.error(
+      "Analysis stats error:",
+      error
+    );
+
+    return res
+      .status(500)
+      .json({
+
+        success: false,
+
+        message:
+          "Failed to fetch analysis statistics.",
+      });
+  }
+};
 module.exports = {
   analyzeLocation,
+  getAnalysisStats,
 };

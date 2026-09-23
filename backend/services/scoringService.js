@@ -3,25 +3,24 @@
 // BUSINESS SUCCESS SCORING SERVICE
 // ============================================================
 //
-// Current version:
-// RULE-BASED LOCATION INTELLIGENCE
+// Version:
+// RULE-BASED LOCATION INTELLIGENCE v2
 //
-// This is NOT an ML prediction yet.
+// Purpose:
+// Calculate a Business Success / Opportunity Score (0-100)
+// using location, demand, competition, accessibility,
+// activity generators and data reliability.
 //
-// The service combines:
-// - Category-specific demand
-// - Competition
-// - Accessibility
-// - Location attractiveness
-// - OSM data coverage
-// - Data reliability
+// IMPORTANT:
+// This is NOT a trained ML probability model.
 //
-// Final score:
-// Business Success Score = 0 - 100
+// The returned "successScore" represents:
+//     Business Opportunity Score: 0-100
 //
-// Higher score = better opportunity
+// It should NOT be interpreted as:
+//     "84% guaranteed chance of success"
 //
-// Later this service can be replaced/extended with:
+// Later this service can be extended/replaced with:
 // - XGBoost
 // - Random Forest
 // - Logistic Regression
@@ -46,6 +45,18 @@ function safeNumber(value, fallback = 0) {
 
 
 // ============================================================
+// HELPER: NON-NEGATIVE NUMBER
+// ============================================================
+
+function nonNegative(value, fallback = 0) {
+  return Math.max(
+    0,
+    safeNumber(value, fallback)
+  );
+}
+
+
+// ============================================================
 // HELPER: CLAMP SCORE
 // ============================================================
 
@@ -63,10 +74,25 @@ function clampScore(value) {
 
 
 // ============================================================
+// HELPER: NORMALIZE CATEGORY
+// ============================================================
+
+function normalizeCategory(category) {
+  return String(category || "gym")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "_");
+}
+
+
+// ============================================================
 // CATEGORY DEMAND WEIGHTS
 // ============================================================
 //
 // Higher weight = stronger relationship with category demand.
+//
+// These are heuristic weights.
+// They should eventually be learned from real business data.
 //
 // ============================================================
 
@@ -196,21 +222,41 @@ const CATEGORY_WEIGHTS = {
 
 
 // ============================================================
+// DEFAULT WEIGHTS
+// ============================================================
+
+const DEFAULT_CATEGORY_WEIGHTS = {
+
+  education: 1.5,
+  offices: 1.5,
+  hospitals: 1.0,
+  clinics: 1.0,
+  pharmacies: 0.5,
+  shopping: 2.0,
+  transport: 2.0,
+  tourism: 1.5,
+  residential: 2.0,
+  sports: 1.0,
+  food: 1.0,
+  entertainment: 1.5,
+
+};
+
+
+// ============================================================
 // GET CATEGORY WEIGHTS
 // ============================================================
 
 function getCategoryWeights(category) {
 
   const normalizedCategory =
-    String(category || "")
-      .toLowerCase()
-      .trim();
+    normalizeCategory(category);
 
   return (
     CATEGORY_WEIGHTS[
       normalizedCategory
     ] ||
-    CATEGORY_WEIGHTS.gym
+    DEFAULT_CATEGORY_WEIGHTS
   );
 }
 
@@ -219,16 +265,14 @@ function getCategoryWeights(category) {
 // DEMAND SCORE
 // ============================================================
 //
-// IMPORTANT:
-//
-// We use diminishing returns.
+// Diminishing returns are used.
 //
 // Example:
 //
-// 1 hospital is valuable.
-// 10 hospitals should not produce 10x the demand.
+// 1 hospital = useful signal
+// 10 hospitals != 10x demand
 //
-// Therefore logarithmic-style saturation is used.
+// log1p() prevents very large counts from dominating.
 //
 // ============================================================
 
@@ -240,9 +284,8 @@ function calculateDemandScore(
   const weights =
     getCategoryWeights(category);
 
-  const categories = Object.keys(
-    weights
-  );
+  const categories =
+    Object.keys(weights);
 
   let rawScore = 0;
 
@@ -252,34 +295,28 @@ function calculateDemandScore(
     (key) => {
 
       const count =
-        Math.max(
-          0,
-          safeNumber(
-            demand[key],
-            0
-          )
+        nonNegative(
+          demand[key],
+          0
         );
 
       const weight =
-        safeNumber(
+        nonNegative(
           weights[key],
           0
         );
 
-      // ------------------------------------------------------
-      // Diminishing returns
-      // ------------------------------------------------------
-
       const effectiveCount =
-        Math.log1p(count) * 2;
+        Math.min(
+          Math.log1p(count) * 2,
+          10
+        );
 
       rawScore +=
-        effectiveCount *
-        weight;
+        effectiveCount * weight;
 
       maximumPossibleScore +=
-        10 *
-        weight;
+        10 * weight;
     }
   );
 
@@ -293,8 +330,7 @@ function calculateDemandScore(
     (
       rawScore /
       maximumPossibleScore
-    ) *
-    100;
+    ) * 100;
 
   return clampScore(score);
 }
@@ -302,11 +338,6 @@ function calculateDemandScore(
 
 // ============================================================
 // CATEGORY-SPECIFIC DEMAND SCORE
-// ============================================================
-//
-// This gives a more understandable sub-score for the selected
-// business category.
-//
 // ============================================================
 
 function calculateCategoryDemandScore(
@@ -327,12 +358,9 @@ function calculateCategoryDemandScore(
     ([key, weight]) => {
 
       const count =
-        Math.max(
-          0,
-          safeNumber(
-            demand[key],
-            0
-          )
+        nonNegative(
+          demand[key],
+          0
         );
 
       const effectiveCount =
@@ -346,13 +374,12 @@ function calculateCategoryDemandScore(
         weight;
 
       maximumScore +=
-        10 *
-        weight;
+        10 * weight;
     }
   );
 
   if (
-    maximumScore === 0
+    maximumScore <= 0
   ) {
     return 0;
   }
@@ -361,9 +388,91 @@ function calculateCategoryDemandScore(
     (
       weightedScore /
       maximumScore
-    ) *
-    100
+    ) * 100
   );
+}
+
+
+// ============================================================
+// FOOT TRAFFIC SCORE
+// ============================================================
+//
+// Optional input.
+//
+// Supports:
+// - estimated foot traffic
+// - pedestrian count
+// - traffic index
+// - crowd density
+//
+// If unavailable, return a neutral score.
+//
+// ============================================================
+
+function calculateFootTrafficScore(
+  footTraffic = {}
+) {
+
+  const directScore =
+  footTraffic.score !== undefined &&
+  footTraffic.score !== null &&
+  Number.isFinite(Number(footTraffic.score))
+    ? Number(footTraffic.score)
+    : null;
+
+if (directScore !== null) {
+  return clampScore(directScore);
+}
+
+  const pedestrianCount =
+    nonNegative(
+      footTraffic.pedestrianCount,
+      0
+    );
+
+  const trafficIndex =
+    nonNegative(
+      footTraffic.trafficIndex,
+      0
+    );
+
+  const crowdDensity =
+    nonNegative(
+      footTraffic.crowdDensity,
+      0
+    );
+
+  if (
+    pedestrianCount === 0 &&
+    trafficIndex === 0 &&
+    crowdDensity === 0
+  ) {
+    return 50;
+  }
+
+  let score = 20;
+
+  score +=
+    Math.min(
+      Math.log1p(
+        pedestrianCount
+      ) * 7,
+      35
+    );
+
+  score +=
+    Math.min(
+      trafficIndex * 0.3,
+      25
+    );
+
+  score +=
+    Math.min(
+      crowdDensity * 0.5,
+      20
+    );
+
+  return clampScore(score);
 }
 
 
@@ -371,17 +480,10 @@ function calculateCategoryDemandScore(
 // COMPETITION SCORE
 // ============================================================
 //
-// HIGH score = GOOD opportunity
+// HIGH SCORE = GOOD OPPORTUNITY
 //
-// 100 = very little detected competition
+// 100 = very little competition
 // 0   = extremely competitive
-//
-// Competition is evaluated using:
-// - total competitors
-// - density
-// - competitors within 500m
-// - competitors within 1km
-// - competitors within 2km
 //
 // ============================================================
 
@@ -390,50 +492,34 @@ function calculateCompetitionScore(
 ) {
 
   const competitors =
-    Math.max(
-      0,
-      safeNumber(
-        competition.count,
-        0
-      )
+    nonNegative(
+      competition.count,
+      0
     );
 
   const density =
-    Math.max(
-      0,
-      safeNumber(
-        competition.density,
-        0
-      )
+    nonNegative(
+      competition.density,
+      0
     );
 
   const within500m =
-    Math.max(
-      0,
-      safeNumber(
-        competition.within500m,
-        0
-      )
+    nonNegative(
+      competition.within500m,
+      0
     );
 
   const within1km =
-    Math.max(
-      0,
-      safeNumber(
-        competition.within1km,
-        0
-      )
+    nonNegative(
+      competition.within1km,
+      0
     );
 
   const within2km =
-    Math.max(
-      0,
-      safeNumber(
-        competition.within2km,
-        0
-      )
+    nonNegative(
+      competition.within2km,
+      0
     );
-
 
   let score = 100;
 
@@ -450,7 +536,7 @@ function calculateCompetitionScore(
 
 
   // ----------------------------------------------------------
-  // Density
+  // Competition density
   // ----------------------------------------------------------
 
   score -=
@@ -472,7 +558,7 @@ function calculateCompetitionScore(
 
 
   // ----------------------------------------------------------
-  // 1 km competition
+  // 500m - 1km
   // ----------------------------------------------------------
 
   const outside500m =
@@ -490,7 +576,7 @@ function calculateCompetitionScore(
 
 
   // ----------------------------------------------------------
-  // 2 km competition
+  // 1km - 2km
   // ----------------------------------------------------------
 
   const outside1km =
@@ -514,18 +600,6 @@ function calculateCompetitionScore(
 // ============================================================
 // COMPETITION RELIABILITY
 // ============================================================
-//
-// IMPORTANT:
-//
-// Zero detected competitors does NOT automatically mean that
-// there are zero real competitors.
-//
-// Reliability depends on:
-// - OSM data coverage
-// - number of businesses returned
-// - number of competitors
-//
-// ============================================================
 
 function calculateCompetitionReliability({
   competition = {},
@@ -534,27 +608,19 @@ function calculateCompetitionReliability({
 }) {
 
   const competitorCount =
-    Math.max(
-      0,
-      safeNumber(
-        competition.count,
-        0
-      )
+    nonNegative(
+      competition.count,
+      0
     );
 
   const businesses =
-    Math.max(
-      0,
-      safeNumber(
-        businessCount,
-        0
-      )
+    nonNegative(
+      businessCount,
+      0
     );
 
 
-  // ----------------------------------------------------------
-  // Strong evidence
-  // ----------------------------------------------------------
+  // Strong mapped evidence
 
   if (
     dataCoverageScore >= 80 &&
@@ -565,13 +631,9 @@ function calculateCompetitionReliability({
   }
 
 
-  // ----------------------------------------------------------
-  // Good mapped data but zero competitors
-  // ----------------------------------------------------------
+  // Strong business mapping but zero competitors
   //
-  // We do NOT call this High because absence of a competitor
-  // can be caused by missing business mapping.
-  //
+  // Zero competitors does NOT mean zero real businesses.
 
   if (
     dataCoverageScore >= 80 &&
@@ -582,9 +644,7 @@ function calculateCompetitionReliability({
   }
 
 
-  // ----------------------------------------------------------
   // Moderate evidence
-  // ----------------------------------------------------------
 
   if (
     dataCoverageScore >= 50 &&
@@ -602,7 +662,7 @@ function calculateCompetitionReliability({
 // ACCESSIBILITY SCORE
 // ============================================================
 //
-// Accessibility considers:
+// Factors:
 //
 // - public transport
 // - roads
@@ -611,9 +671,6 @@ function calculateCompetitionReliability({
 // - crossings
 // - cycleways
 //
-// Roads are capped because a large number of OSM road segments
-// does NOT necessarily mean good customer accessibility.
-//
 // ============================================================
 
 function calculateAccessibilityScore(
@@ -621,66 +678,46 @@ function calculateAccessibilityScore(
 ) {
 
   const transport =
-    Math.max(
-      0,
-      safeNumber(
-        data.transport,
-        0
-      )
+    nonNegative(
+      data.transport,
+      0
     );
 
   const roads =
-    Math.max(
-      0,
-      safeNumber(
-        data.roads,
-        0
-      )
+    nonNegative(
+      data.roads,
+      0
     );
 
   const parking =
-    Math.max(
-      0,
-      safeNumber(
-        data.parking,
-        0
-      )
+    nonNegative(
+      data.parking,
+      0
     );
 
   const walkable =
-    Math.max(
-      0,
-      safeNumber(
-        data.walkable,
-        0
-      )
+    nonNegative(
+      data.walkable,
+      0
     );
 
   const crossings =
-    Math.max(
-      0,
-      safeNumber(
-        data.crossings,
-        0
-      )
+    nonNegative(
+      data.crossings,
+      0
     );
 
   const cycleways =
-    Math.max(
-      0,
-      safeNumber(
-        data.cycleways,
-        0
-      )
+    nonNegative(
+      data.cycleways,
+      0
     );
 
 
   let score = 20;
 
 
-  // ----------------------------------------------------------
   // Public transport
-  // ----------------------------------------------------------
 
   score +=
     Math.min(
@@ -689,9 +726,7 @@ function calculateAccessibilityScore(
     );
 
 
-  // ----------------------------------------------------------
   // Roads
-  // ----------------------------------------------------------
 
   score +=
     Math.min(
@@ -700,9 +735,7 @@ function calculateAccessibilityScore(
     );
 
 
-  // ----------------------------------------------------------
   // Parking
-  // ----------------------------------------------------------
 
   score +=
     Math.min(
@@ -711,9 +744,7 @@ function calculateAccessibilityScore(
     );
 
 
-  // ----------------------------------------------------------
   // Walkability
-  // ----------------------------------------------------------
 
   score +=
     Math.min(
@@ -722,24 +753,20 @@ function calculateAccessibilityScore(
     );
 
 
-  // ----------------------------------------------------------
   // Crossings
-  // ----------------------------------------------------------
 
   score +=
     Math.min(
-      crossings * 1,
+      crossings,
       5
     );
 
 
-  // ----------------------------------------------------------
   // Cycleways
-  // ----------------------------------------------------------
 
   score +=
     Math.min(
-      cycleways * 1,
+      cycleways,
       5
     );
 
@@ -758,125 +785,128 @@ function calculateLocationAttractiveness(
 ) {
 
   const education =
-    Math.max(
-      0,
-      safeNumber(
-        demand.education,
-        0
-      )
+    nonNegative(
+      demand.education,
+      0
     );
 
   const offices =
-    Math.max(
-      0,
-      safeNumber(
-        demand.offices,
-        0
-      )
+    nonNegative(
+      demand.offices,
+      0
     );
 
   const shopping =
-    Math.max(
-      0,
-      safeNumber(
-        demand.shopping,
-        0
-      )
+    nonNegative(
+      demand.shopping,
+      0
     );
 
   const tourism =
-    Math.max(
-      0,
-      safeNumber(
-        demand.tourism,
-        0
-      )
+    nonNegative(
+      demand.tourism,
+      0
     );
 
   const residential =
-    Math.max(
-      0,
-      safeNumber(
-        demand.residential,
-        0
-      )
+    nonNegative(
+      demand.residential,
+      0
     );
 
   const transport =
-    Math.max(
-      0,
-      safeNumber(
-        demand.transport,
-        0
-      )
+    nonNegative(
+      demand.transport,
+      0
     );
 
   const parks =
-    Math.max(
-      0,
-      safeNumber(
-        locationIndicators.parks,
-        0
-      )
+    nonNegative(
+      locationIndicators.parks,
+      0
     );
 
   const sports =
-    Math.max(
-      0,
-      safeNumber(
-        locationIndicators.sportsFacilities,
-        0
-      )
+    nonNegative(
+      locationIndicators.sportsFacilities,
+      0
     );
 
   const markets =
-    Math.max(
-      0,
-      safeNumber(
-        locationIndicators.markets,
-        0
-      )
+    nonNegative(
+      locationIndicators.markets,
+      0
+    );
+
+  const malls =
+    nonNegative(
+      locationIndicators.malls,
+      0
+    );
+
+  const hospitals =
+    nonNegative(
+      locationIndicators.hospitals,
+      0
     );
 
 
-  let score = 15;
+  let score = 10;
 
 
   score +=
     Math.min(
-      Math.log1p(education) * 3,
+      Math.log1p(
+        education
+      ) * 3,
       10
     );
 
+
   score +=
     Math.min(
-      Math.log1p(offices) * 4,
+      Math.log1p(
+        offices
+      ) * 4,
       15
     );
 
-  score +=
-    Math.min(
-      Math.log1p(shopping) * 3,
-      10
-    );
 
   score +=
     Math.min(
-      Math.log1p(tourism) * 3,
+      Math.log1p(
+        shopping
+      ) * 3,
       10
     );
 
+
   score +=
     Math.min(
-      Math.log1p(residential) * 4,
+      Math.log1p(
+        tourism
+      ) * 3,
+      10
+    );
+
+
+  score +=
+    Math.min(
+      Math.log1p(
+        residential
+      ) * 4,
       15
     );
 
+
   score +=
     Math.min(
-      Math.log1p(transport) * 4,
+      Math.log1p(
+        transport
+      ) * 4,
       10
     );
+
 
   score +=
     Math.min(
@@ -884,15 +914,31 @@ function calculateLocationAttractiveness(
       5
     );
 
+
   score +=
     Math.min(
       sports * 2,
       5
     );
 
+
   score +=
     Math.min(
-      markets * 1,
+      markets,
+      5
+    );
+
+
+  score +=
+    Math.min(
+      malls * 2,
+      5
+    );
+
+
+  score +=
+    Math.min(
+      hospitals,
       5
     );
 
@@ -902,22 +948,106 @@ function calculateLocationAttractiveness(
 
 
 // ============================================================
+// POPULATION / DEMOGRAPHIC SCORE
+// ============================================================
+//
+// Optional.
+//
+// Supported inputs:
+//
+// population
+// populationDensity
+// incomeIndex
+// targetPopulation
+//
+// ============================================================
+
+function calculateDemographicScore(
+  demographics = {}
+) {
+
+  const directScore =
+    safeNumber(
+      demographics.score,
+      -1
+    );
+
+  if (
+    directScore >= 0
+  ) {
+    return clampScore(
+      directScore
+    );
+  }
+
+
+  const population =
+    nonNegative(
+      demographics.population,
+      0
+    );
+
+  const populationDensity =
+    nonNegative(
+      demographics.populationDensity,
+      0
+    );
+
+  const incomeIndex =
+    nonNegative(
+      demographics.incomeIndex,
+      0
+    );
+
+
+  if (
+    population === 0 &&
+    populationDensity === 0 &&
+    incomeIndex === 0
+  ) {
+    return 50;
+  }
+
+
+  let score = 20;
+
+
+  score +=
+    Math.min(
+      Math.log1p(
+        population
+      ) * 4,
+      30
+    );
+
+
+  score +=
+    Math.min(
+      populationDensity * 0.5,
+      30
+    );
+
+
+  score +=
+    Math.min(
+      incomeIndex * 0.2,
+      20
+    );
+
+
+  return clampScore(
+    score
+  );
+}
+
+
+// ============================================================
 // DATA COVERAGE SCORE
 // ============================================================
 //
-// IMPORTANT:
+// Prefer businessCount over total OSM objects.
 //
-// Do NOT treat every OSM object as a business.
-//
-// Buildings + roads can create thousands of objects.
-//
-// Therefore:
-//
-// If businessCount is available:
-// use businessCount.
-//
-// Otherwise:
-// fall back to totalPlaces.
+// Roads/buildings are NOT equivalent to businesses.
 //
 // ============================================================
 
@@ -927,28 +1057,22 @@ function calculateDataCoverageScore(
 ) {
 
   const total =
-    Math.max(
-      0,
-      safeNumber(
-        totalPlaces,
-        0
-      )
+    nonNegative(
+      totalPlaces,
+      0
     );
 
   const businesses =
     businessCount === null
       ? null
-      : Math.max(
-          0,
-          safeNumber(
-            businessCount,
-            0
-          )
+      : nonNegative(
+          businessCount,
+          0
         );
 
 
   // ----------------------------------------------------------
-  // Preferred method: business count
+  // Preferred: actual business count
   // ----------------------------------------------------------
 
   if (
@@ -996,7 +1120,7 @@ function calculateDataCoverageScore(
 
 
   // ----------------------------------------------------------
-  // Fallback method
+  // Fallback: total places
   // ----------------------------------------------------------
 
   if (
@@ -1043,11 +1167,13 @@ function calculateDataCoverageScore(
 // DATA CONFIDENCE SCORE
 // ============================================================
 //
-// This is different from business success.
+// Confidence != success.
 //
-// Success = opportunity
+// Success:
+// "How attractive is the location?"
 //
-// Confidence = how trustworthy the available evidence is
+// Confidence:
+// "How trustworthy is the available evidence?"
 //
 // ============================================================
 
@@ -1057,43 +1183,36 @@ function calculateConfidenceScore({
   competitorCount = 0,
   demandScore = 0,
   dataCoverageScore = 0,
+  footTrafficScore = null,
+  demographicScore = null,
 }) {
 
   const total =
-    Math.max(
-      0,
-      safeNumber(
-        totalPlaces,
-        0
-      )
+    nonNegative(
+      totalPlaces,
+      0
     );
 
   const businesses =
     businessCount === null
       ? null
-      : Math.max(
-          0,
-          safeNumber(
-            businessCount,
-            0
-          )
+      : nonNegative(
+          businessCount,
+          0
         );
 
   const competitors =
-    Math.max(
-      0,
-      safeNumber(
-        competitorCount,
-        0
-      )
+    nonNegative(
+      competitorCount,
+      0
     );
 
 
-  let confidence = 25;
+  let confidence = 20;
 
 
   // ----------------------------------------------------------
-  // Total OSM data
+  // Total mapped data
   // ----------------------------------------------------------
 
   if (
@@ -1204,6 +1323,30 @@ function calculateConfidenceScore({
   }
 
 
+  // ----------------------------------------------------------
+  // Optional foot traffic evidence
+  // ----------------------------------------------------------
+
+  if (
+    footTrafficScore !== null &&
+    footTrafficScore !== undefined
+  ) {
+    confidence += 5;
+  }
+
+
+  // ----------------------------------------------------------
+  // Optional demographic evidence
+  // ----------------------------------------------------------
+
+  if (
+    demographicScore !== null &&
+    demographicScore !== undefined
+  ) {
+    confidence += 5;
+  }
+
+
   return clampScore(
     confidence
   );
@@ -1218,17 +1361,23 @@ function getConfidenceLevel(
   score
 ) {
 
+  const value =
+    clampScore(score);
+
+
   if (
-    score >= 75
+    value >= 75
   ) {
     return "High";
   }
 
+
   if (
-    score >= 50
+    value >= 50
   ) {
     return "Medium";
   }
+
 
   return "Low";
 }
@@ -1240,12 +1389,12 @@ function getConfidenceLevel(
 //
 // HIGH risk = bad
 //
-// Risk is based on:
+// Risk considers:
 //
 // - competition
 // - demand
 // - accessibility
-// - attractiveness
+// - location attractiveness
 // - data uncertainty
 //
 // ============================================================
@@ -1261,6 +1410,10 @@ function calculateRiskScore({
   locationAttractiveness = 50,
 
   dataCoverageScore = 50,
+
+  footTrafficScore = 50,
+
+  demographicScore = 50,
 
 }) {
 
@@ -1284,8 +1437,18 @@ function calculateRiskScore({
       safeNumber(
         locationAttractiveness,
         50
+      ) +
+
+      safeNumber(
+        footTrafficScore,
+        50
+      ) +
+
+      safeNumber(
+        demographicScore,
+        50
       )
-    ) / 4;
+    ) / 6;
 
 
   let risk =
@@ -1314,7 +1477,6 @@ function calculateRiskScore({
   ) {
 
     risk += 5;
-
   }
 
 
@@ -1328,15 +1490,17 @@ function calculateRiskScore({
 // SUCCESS SCORE
 // ============================================================
 //
-// Weighted model:
+// Core weights:
 //
-// Demand              = 30%
-// Competition         = 25%
-// Accessibility      = 15%
-// Location            = 15%
-// Risk safety         = 15%
+// Demand              = 25%
+// Competition         = 22%
+// Accessibility       = 13%
+// Location             = 13%
+// Foot Traffic         = 10%
+// Demographics         = 7%
+// Risk Safety          = 10%
 //
-// Total               = 100%
+// Total                = 100%
 //
 // ============================================================
 
@@ -1349,6 +1513,10 @@ function calculateBusinessSuccessScore({
   accessibilityScore = 0,
 
   locationAttractiveness = 0,
+
+  footTrafficScore = 50,
+
+  demographicScore = 50,
 
   riskScore = 50,
 
@@ -1364,22 +1532,36 @@ function calculateBusinessSuccessScore({
   const successScore =
 
     safeNumber(
-      demandScore
-    ) * 0.30 +
-
-    safeNumber(
-      competitionScore
+      demandScore,
+      0
     ) * 0.25 +
 
     safeNumber(
-      accessibilityScore
-    ) * 0.15 +
+      competitionScore,
+      0
+    ) * 0.22 +
 
     safeNumber(
-      locationAttractiveness
-    ) * 0.15 +
+      accessibilityScore,
+      0
+    ) * 0.13 +
 
-    riskSafetyScore * 0.15;
+    safeNumber(
+      locationAttractiveness,
+      0
+    ) * 0.13 +
+
+    safeNumber(
+      footTrafficScore,
+      50
+    ) * 0.10 +
+
+    safeNumber(
+      demographicScore,
+      50
+    ) * 0.07 +
+
+    riskSafetyScore * 0.10;
 
 
   return {
@@ -1416,11 +1598,13 @@ function getSuccessLevel(
     return "Excellent Opportunity";
   }
 
+
   if (
     value >= 65
   ) {
     return "Good Opportunity";
   }
+
 
   if (
     value >= 50
@@ -1428,11 +1612,13 @@ function getSuccessLevel(
     return "Moderate Opportunity";
   }
 
+
   if (
     value >= 35
   ) {
     return "High Risk Opportunity";
   }
+
 
   return "Poor Opportunity";
 }
@@ -1456,11 +1642,13 @@ function getRiskLevel(
     return "Very Low";
   }
 
+
   if (
     value <= 40
   ) {
     return "Low";
   }
+
 
   if (
     value <= 60
@@ -1468,11 +1656,13 @@ function getRiskLevel(
     return "Medium";
   }
 
+
   if (
     value <= 75
   ) {
     return "High";
   }
+
 
   return "Very High";
 }
@@ -1496,6 +1686,10 @@ function generateRecommendations({
 
   locationAttractiveness,
 
+  footTrafficScore,
+
+  demographicScore,
+
   riskScore,
 
   successScore,
@@ -1514,6 +1708,9 @@ function generateRecommendations({
 
   const recommendations = [];
 
+  const normalizedCategory =
+    normalizeCategory(category);
+
 
   // ==========================================================
   // DATA COVERAGE
@@ -1524,7 +1721,7 @@ function generateRecommendations({
   ) {
 
     recommendations.push(
-      `Available location data is limited. The Business Success Score should be treated as a preliminary estimate.`
+      "Available location data is limited. The Business Success Score should be treated as a preliminary estimate."
     );
 
   } else if (
@@ -1532,15 +1729,14 @@ function generateRecommendations({
   ) {
 
     recommendations.push(
-      `The available location data provides moderate evidence. Additional demographic and local business data would improve confidence.`
+      "The available location data provides moderate evidence. Additional demographic, business and customer-demand data would improve confidence."
     );
 
   } else {
 
     recommendations.push(
-      `The selected area has relatively strong mapped location data for this analysis.`
+      "The selected area has relatively strong mapped location data for this analysis."
     );
-
   }
 
 
@@ -1549,15 +1745,26 @@ function generateRecommendations({
   // ==========================================================
 
   if (
-    competitionReliability ===
-    "Medium" &&
-    competition.count === 0
+    competitionReliability === "Medium" &&
+    nonNegative(
+      competition.count,
+      0
+    ) === 0
   ) {
 
     recommendations.push(
-      `No ${category} competitors were detected in the available OSM data, but absence of mapped competitors does not prove that no real competitors exist. Verify local businesses before investing.`
+      `No ${normalizedCategory} competitors were detected in the available mapped data, but this does not prove that no real competitors exist. Verify local businesses before investing.`
     );
+  }
 
+
+  if (
+    competitionReliability === "Low"
+  ) {
+
+    recommendations.push(
+      "Competition data reliability is low. Some businesses may be missing from the available map data."
+    );
   }
 
 
@@ -1570,7 +1777,7 @@ function generateRecommendations({
   ) {
 
     recommendations.push(
-      `Demand indicators are strong for a ${category}.`
+      `Demand indicators are strong for a ${normalizedCategory}.`
     );
 
   } else if (
@@ -1578,7 +1785,7 @@ function generateRecommendations({
   ) {
 
     recommendations.push(
-      `Demand indicators are moderate-to-good for a ${category}.`
+      `Demand indicators are moderate-to-good for a ${normalizedCategory}.`
     );
 
   } else if (
@@ -1586,180 +1793,236 @@ function generateRecommendations({
   ) {
 
     recommendations.push(
-      `Demand indicators are moderate for a ${category}. Compare nearby locations before making a final decision.`
+      `Demand indicators are moderate for a ${normalizedCategory}. Compare nearby locations before making a final decision.`
     );
 
   } else {
 
     recommendations.push(
-      `Demand indicators are relatively weak for a ${category}. Consider locations with stronger customer-generating activity.`
+      `Demand indicators are relatively weak for a ${normalizedCategory}. Consider locations with stronger customer-generating activity.`
     );
-
   }
 
 
   // ==========================================================
-  // CATEGORY-SPECIFIC DEMAND
+  // CATEGORY-SPECIFIC RECOMMENDATIONS
   // ==========================================================
 
   if (
-    category === "pharmacy"
+    normalizedCategory === "pharmacy"
   ) {
 
     if (
-      demand.hospitals > 0
+      nonNegative(
+        demand.hospitals,
+        0
+      ) > 0
     ) {
 
       recommendations.push(
         `${demand.hospitals} hospital-related location(s) were detected, which can support pharmacy demand.`
       );
-
     }
 
+
     if (
-      demand.clinics > 0
+      nonNegative(
+        demand.clinics,
+        0
+      ) > 0
     ) {
 
       recommendations.push(
         `${demand.clinics} clinic/doctor-related location(s) were detected, which may generate pharmacy demand.`
       );
-
     }
 
+
     if (
-      demand.residential > 0
+      nonNegative(
+        demand.residential,
+        0
+      ) > 0
     ) {
 
       recommendations.push(
-        `Residential activity was detected and can support recurring local pharmacy demand.`
+        "Residential activity can support recurring local pharmacy demand."
       );
 
     } else {
 
       recommendations.push(
-        `Residential buildings were not strongly represented in the extracted demand indicators. Verify the surrounding residential population manually.`
+        "Residential activity was not strongly represented in the extracted demand indicators. Verify the surrounding residential population manually."
       );
-
     }
 
+
     if (
-      demand.transport === 0
+      nonNegative(
+        demand.transport,
+        0
+      ) === 0
     ) {
 
       recommendations.push(
-        `No public transport locations were detected. Check nearby bus stops, auto stands and pedestrian access manually.`
+        "No public transport locations were detected. Check nearby bus stops, auto stands and pedestrian access manually."
       );
-
     }
-
   }
 
 
   if (
-    category === "gym"
+    normalizedCategory === "gym"
   ) {
 
     if (
-      demand.residential > 0
+      nonNegative(
+        demand.residential,
+        0
+      ) > 0
     ) {
 
       recommendations.push(
-        `Residential activity can support recurring gym memberships.`
+        "Residential activity can support recurring gym memberships."
       );
-
     }
+
 
     if (
-      demand.offices > 0
+      nonNegative(
+        demand.offices,
+        0
+      ) > 0
     ) {
 
       recommendations.push(
-        `Nearby office activity may provide an additional customer segment for a gym.`
+        "Nearby office activity may provide an additional customer segment for a gym."
       );
-
     }
+
 
     if (
-      demand.sports > 0
+      nonNegative(
+        demand.sports,
+        0
+      ) > 0
     ) {
 
       recommendations.push(
-        `Existing sports and fitness activity indicates local interest in fitness-related services.`
+        "Existing sports and fitness activity indicates local interest in fitness-related services."
       );
-
     }
-
   }
 
 
   if (
-    category === "cafe"
+    normalizedCategory === "cafe"
   ) {
 
     if (
-      demand.education > 0
+      nonNegative(
+        demand.education,
+        0
+      ) > 0
     ) {
 
       recommendations.push(
-        `Nearby educational locations may provide student and staff demand for a café.`
+        "Nearby educational locations may provide student and staff demand for a café."
       );
-
     }
+
 
     if (
-      demand.offices > 0
+      nonNegative(
+        demand.offices,
+        0
+      ) > 0
     ) {
 
       recommendations.push(
-        `Nearby offices can support breakfast, lunch and evening café demand.`
+        "Nearby offices can support breakfast, lunch and evening café demand."
       );
-
     }
-
   }
 
 
   if (
-    category === "restaurant"
+    normalizedCategory === "restaurant"
   ) {
 
     if (
-      demand.offices > 0
+      nonNegative(
+        demand.offices,
+        0
+      ) > 0
     ) {
 
       recommendations.push(
-        `Nearby offices may create weekday lunch and evening demand.`
+        "Nearby offices may create weekday lunch and evening demand."
       );
-
     }
+
 
     if (
-      demand.shopping > 0
+      nonNegative(
+        demand.shopping,
+        0
+      ) > 0
     ) {
 
       recommendations.push(
-        `Shopping activity may generate additional restaurant customers.`
+        "Shopping activity may generate additional restaurant customers."
       );
-
     }
-
   }
 
 
   if (
-    category === "grocery"
+    normalizedCategory === "grocery"
   ) {
 
     if (
-      demand.residential > 0
+      nonNegative(
+        demand.residential,
+        0
+      ) > 0
     ) {
 
       recommendations.push(
-        `Residential activity is particularly important for grocery businesses and was detected around this location.`
+        "Residential activity is particularly important for grocery businesses and was detected around this location."
       );
+    }
+  }
 
+
+  if (
+    normalizedCategory === "hotel"
+  ) {
+
+    if (
+      nonNegative(
+        demand.tourism,
+        0
+      ) > 0
+    ) {
+
+      recommendations.push(
+        "Tourism activity can support hotel demand in the selected area."
+      );
     }
 
+
+    if (
+      nonNegative(
+        demand.transport,
+        0
+      ) > 0
+    ) {
+
+      recommendations.push(
+        "Nearby transport activity improves accessibility for hotel customers."
+      );
+    }
   }
 
 
@@ -1772,7 +2035,7 @@ function generateRecommendations({
   ) {
 
     recommendations.push(
-      `Competition appears relatively low based on detected ${category} businesses.`
+      `Competition appears relatively low based on detected ${normalizedCategory} businesses.`
     );
 
   } else if (
@@ -1780,7 +2043,7 @@ function generateRecommendations({
   ) {
 
     recommendations.push(
-      `Competition is moderate. Differentiation in pricing, service quality, convenience and customer experience is recommended.`
+      "Competition is moderate. Differentiation in pricing, service quality, convenience and customer experience is recommended."
     );
 
   } else if (
@@ -1788,15 +2051,14 @@ function generateRecommendations({
   ) {
 
     recommendations.push(
-      `Competition is relatively high. A clear competitive advantage will be important.`
+      "Competition is relatively high. A clear competitive advantage will be important."
     );
 
   } else {
 
     recommendations.push(
-      `Competition is very high. Consider a different micro-location or a strongly differentiated business model.`
+      "Competition is very high. Consider a different micro-location or a strongly differentiated business model."
     );
-
   }
 
 
@@ -1805,28 +2067,82 @@ function generateRecommendations({
   // ==========================================================
 
   if (
-    competition.within500m > 0
+    nonNegative(
+      competition.within500m,
+      0
+    ) > 0
   ) {
 
     recommendations.push(
       `${competition.within500m} competitor(s) were detected within approximately 500 meters.`
     );
-
   }
 
 
   if (
-    competition.nearestDistance !==
-      null &&
-    competition.nearestDistance !==
-      undefined &&
-    competition.count > 0
+    competition.nearestDistance !== null &&
+    competition.nearestDistance !== undefined &&
+    nonNegative(
+      competition.count,
+      0
+    ) > 0
   ) {
 
     recommendations.push(
       `The nearest detected competitor is approximately ${competition.nearestDistance} km away.`
     );
+  }
 
+
+  // ==========================================================
+  // FOOT TRAFFIC
+  // ==========================================================
+
+  if (
+    footTrafficScore >= 75
+  ) {
+
+    recommendations.push(
+      "Foot-traffic indicators are strong and may support customer acquisition."
+    );
+
+  } else if (
+    footTrafficScore >= 50
+  ) {
+
+    recommendations.push(
+      "Foot-traffic indicators are moderate. Validate peak-hour pedestrian activity before finalizing the location."
+    );
+
+  } else if (
+    footTrafficScore < 50
+  ) {
+
+    recommendations.push(
+      "Foot-traffic indicators are relatively weak. Consider a location with stronger pedestrian or customer movement."
+    );
+  }
+
+
+  // ==========================================================
+  // DEMOGRAPHICS
+  // ==========================================================
+
+  if (
+    demographicScore >= 75
+  ) {
+
+    recommendations.push(
+      "Available demographic indicators are favorable for the selected business."
+    );
+
+  } else if (
+    demographicScore < 40
+  ) {
+
+    recommendations.push(
+      "Available demographic indicators are relatively weak or limited. Additional population and income data would improve the analysis."
+    );
   }
 
 
@@ -1839,7 +2155,7 @@ function generateRecommendations({
   ) {
 
     recommendations.push(
-      `The location has strong accessibility indicators.`
+      "The location has strong accessibility indicators."
     );
 
   } else if (
@@ -1847,15 +2163,14 @@ function generateRecommendations({
   ) {
 
     recommendations.push(
-      `Accessibility is moderate. Verify parking, pedestrian access and public transport before finalizing the location.`
+      "Accessibility is moderate. Verify parking, pedestrian access and public transport before finalizing the location."
     );
 
   } else {
 
     recommendations.push(
-      `Accessibility may be a significant constraint for customers.`
+      "Accessibility may be a significant constraint for customers."
     );
-
   }
 
 
@@ -1868,7 +2183,7 @@ function generateRecommendations({
   ) {
 
     recommendations.push(
-      `Nearby activity generators strengthen the overall attractiveness of the location.`
+      "Nearby activity generators strengthen the overall attractiveness of the location."
     );
 
   } else if (
@@ -1876,15 +2191,42 @@ function generateRecommendations({
   ) {
 
     recommendations.push(
-      `The location has moderate activity-generating potential.`
+      "The location has moderate activity-generating potential."
     );
 
   } else {
 
     recommendations.push(
-      `The selected area has relatively few strong activity generators.`
+      "The selected area has relatively few strong activity generators."
+    );
+  }
+
+
+  // ==========================================================
+  // RISK
+  // ==========================================================
+
+  if (
+    riskScore <= 25
+  ) {
+
+    recommendations.push(
+      "Overall location risk is relatively low based on the available indicators."
     );
 
+  } else if (
+    riskScore <= 50
+  ) {
+
+    recommendations.push(
+      "Overall location risk is moderate. Compare multiple nearby locations before investing."
+    );
+
+  } else {
+
+    recommendations.push(
+      "Overall location risk is elevated. Additional market and demographic validation is recommended."
+    );
   }
 
 
@@ -1897,7 +2239,7 @@ function generateRecommendations({
   ) {
 
     recommendations.push(
-      `Overall, the location appears highly promising based on the available data. Validate rent, licensing, operating costs and real customer behavior before investing.`
+      "Overall, the location appears highly promising based on the available data. Validate rent, licensing, operating costs and real customer behavior before investing."
     );
 
   } else if (
@@ -1905,7 +2247,7 @@ function generateRecommendations({
   ) {
 
     recommendations.push(
-      `Overall, the location shows good potential. Compare it with nearby alternatives and validate operating costs before making a final decision.`
+      "Overall, the location shows good potential. Compare it with nearby alternatives and validate operating costs before making a final decision."
     );
 
   } else if (
@@ -1913,15 +2255,14 @@ function generateRecommendations({
   ) {
 
     recommendations.push(
-      `The location has moderate potential. Comparing multiple nearby locations may identify a stronger opportunity.`
+      "The location has moderate potential. Comparing multiple nearby locations may identify a stronger opportunity."
     );
 
   } else {
 
     recommendations.push(
-      `The current data suggests a higher-risk opportunity. Consider alternative locations and collect additional demographic and customer-demand data.`
+      "The current data suggests a higher-risk opportunity. Consider alternative locations and collect additional demographic and customer-demand data."
     );
-
   }
 
 
@@ -1930,7 +2271,7 @@ function generateRecommendations({
   // ==========================================================
 
   recommendations.push(
-    `The analysis relies partly on OpenStreetMap. OSM may not contain every real-world business, residential population, foot-traffic pattern or commercial activity.`
+    "The analysis relies partly on OpenStreetMap and other mapped location data. These sources may not contain every real-world business, residential population, foot-traffic pattern or commercial activity."
   );
 
 
@@ -1957,6 +2298,10 @@ function calculateBusinessAnalysis({
   accessibility = {},
 
   locationIndicators = {},
+
+  demographics = {},
+
+  footTraffic = {},
 
   dataCoverage = null,
 
@@ -2046,6 +2391,26 @@ function calculateBusinessAnalysis({
 
 
   // ==========================================================
+  // FOOT TRAFFIC
+  // ==========================================================
+
+  const footTrafficScore =
+    calculateFootTrafficScore(
+      footTraffic
+    );
+
+
+  // ==========================================================
+  // DEMOGRAPHICS
+  // ==========================================================
+
+  const demographicScore =
+    calculateDemographicScore(
+      demographics
+    );
+
+
+  // ==========================================================
   // RISK
   // ==========================================================
 
@@ -2059,6 +2424,10 @@ function calculateBusinessAnalysis({
       accessibilityScore,
 
       locationAttractiveness,
+
+      footTrafficScore,
+
+      demographicScore,
 
       dataCoverageScore,
 
@@ -2085,6 +2454,10 @@ function calculateBusinessAnalysis({
       accessibilityScore,
 
       locationAttractiveness,
+
+      footTrafficScore,
+
+      demographicScore,
 
       riskScore,
 
@@ -2125,6 +2498,18 @@ function calculateBusinessAnalysis({
 
       dataCoverageScore,
 
+      footTrafficScore:
+        footTraffic &&
+        Object.keys(footTraffic).length > 0
+          ? footTrafficScore
+          : null,
+
+      demographicScore:
+        demographics &&
+        Object.keys(demographics).length > 0
+          ? demographicScore
+          : null,
+
     });
 
 
@@ -2153,6 +2538,10 @@ function calculateBusinessAnalysis({
 
       locationAttractiveness,
 
+      footTrafficScore,
+
+      demographicScore,
+
       riskScore,
 
       successScore,
@@ -2176,45 +2565,94 @@ function calculateBusinessAnalysis({
 
   return {
 
+    // --------------------------------------------------------
     // Demand
+    // --------------------------------------------------------
+
     demandScore,
 
     categoryDemandScore,
 
+
+    // --------------------------------------------------------
     // Competition
+    // --------------------------------------------------------
+
     competitionScore,
 
     competitionReliability,
 
+
+    // --------------------------------------------------------
     // Accessibility
+    // --------------------------------------------------------
+
     accessibilityScore,
 
+
+    // --------------------------------------------------------
     // Location
+    // --------------------------------------------------------
+
     locationAttractiveness,
 
+
+    // --------------------------------------------------------
+    // Foot Traffic
+    // --------------------------------------------------------
+
+    footTrafficScore,
+
+
+    // --------------------------------------------------------
+    // Demographics
+    // --------------------------------------------------------
+
+    demographicScore,
+
+
+    // --------------------------------------------------------
     // Risk
+    // --------------------------------------------------------
+
     riskScore,
 
     riskSafetyScore,
 
     riskLevel,
 
+
+    // --------------------------------------------------------
     // Success
+    // --------------------------------------------------------
+
     successScore,
 
     successLevel,
 
+
+    // --------------------------------------------------------
     // Confidence
+    // --------------------------------------------------------
+
     confidence,
 
     confidenceScore,
 
+
+    // --------------------------------------------------------
     // Coverage
+    // --------------------------------------------------------
+
     dataCoverage,
 
     dataCoverageScore,
 
+
+    // --------------------------------------------------------
     // AI-ready recommendations
+    // --------------------------------------------------------
+
     recommendations,
 
   };
@@ -2233,6 +2671,8 @@ module.exports = {
 
   calculateCategoryDemandScore,
 
+  calculateFootTrafficScore,
+
   calculateCompetitionScore,
 
   calculateCompetitionReliability,
@@ -2240,6 +2680,8 @@ module.exports = {
   calculateAccessibilityScore,
 
   calculateLocationAttractiveness,
+
+  calculateDemographicScore,
 
   calculateRiskScore,
 
