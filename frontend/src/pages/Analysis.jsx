@@ -13,8 +13,6 @@ import {
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
-import "../styles/variables.css";
-import "../styles/components.css";
 import "../styles/analysis.css";
 
 // ============================================================
@@ -324,18 +322,49 @@ function Analysis() {
       console.log(
         "Analysis result saved."
       );
-    } catch (error) {
+        } catch (error) {
+
       console.error(
         "Analysis error:",
         error
       );
 
+      let userMessage =
+        "Unable to complete the location analysis. Please try again.";
+
+      // ------------------------------------------------------
+      // BACKEND / NETWORK CONNECTION ERROR
+      // ------------------------------------------------------
+
+      if (
+        error instanceof TypeError &&
+        error.message === "Failed to fetch"
+      ) {
+
+        userMessage =
+          "Unable to connect to the analysis server. Please try again in a moment.";
+
+      }
+
+      // ------------------------------------------------------
+      // OTHER ERRORS
+      // ------------------------------------------------------
+
+      else if (error?.message) {
+
+        userMessage =
+          error.message;
+
+      }
+
       setError(
-        error.message ||
-          "Unable to connect to the backend."
+        userMessage
       );
+
     } finally {
+
       setLoading(false);
+
     }
   };
 
@@ -404,6 +433,8 @@ function Analysis() {
 
   const businessSuccess =
     analysisData?.businessSuccess;
+  const mlPrediction =
+  analysisData?.mlPrediction;
 
   const demand =
     analysisData?.demand;
@@ -984,6 +1015,227 @@ function Analysis() {
             ============================================== */}
 
             <div className="result-score-grid">
+                  {/* ==============================================
+    ML OPPORTUNITY PREDICTION
+============================================== */}
+
+{mlPrediction && (
+  <div className="ml-prediction-card">
+
+    <div className="ml-prediction-header">
+
+      <div>
+        <span className="section-label">
+          MACHINE LEARNING PREDICTION
+        </span>
+
+        <h2>
+          Geographic Opportunity Prediction
+        </h2>
+
+        <p>
+          Prediction generated from OSM-derived
+          geographic features and the trained ML model.
+        </p>
+      </div>
+
+      <div className="ml-prediction-badge">
+        🤖 ML Model
+      </div>
+
+    </div>
+
+
+    <div className="ml-prediction-content">
+
+      <div className="ml-prediction-result">
+
+        <span>
+          Prediction
+        </span>
+
+        <strong>
+          {mlPrediction.predictionLabel || "N/A"}
+        </strong>
+
+        <small>
+          Model classification
+        </small>
+
+      </div>
+
+
+      <div className="ml-prediction-result">
+
+        <span>
+          Opportunity Probability
+        </span>
+
+        <strong>
+  {(
+    Number(
+      mlPrediction.opportunityProbability ?? 0
+    ) * 100
+  ).toFixed(2)}%
+</strong>
+
+        <small>
+          Probability of higher opportunity
+        </small>
+
+      </div>
+
+
+      <div className="ml-prediction-result">
+
+        <span>
+          Lower Opportunity Probability
+        </span>
+
+        <strong>
+  {(
+    (1 -
+      Number(
+        mlPrediction.opportunityProbability ?? 0
+      )) * 100
+  ).toFixed(2)}%
+</strong>
+
+        <small>
+          Model probability
+        </small>
+
+      </div>
+
+    </div>
+
+
+    {mlPrediction.geographicFeatures && (
+      <div className="ml-features">
+
+        <div className="ml-feature">
+          <span>POIs within 500m</span>
+          <strong>
+            {mlPrediction.geographicFeatures.pois_500m ?? 0}
+          </strong>
+        </div>
+
+        <div className="ml-feature">
+          <span>POIs within 1km</span>
+          <strong>
+            {mlPrediction.geographicFeatures.pois_1km ?? 0}
+          </strong>
+        </div>
+
+        <div className="ml-feature">
+          <span>Competitors within 1km</span>
+          <strong>
+            {mlPrediction.geographicFeatures.competitors_1km ?? 0}
+          </strong>
+        </div>
+
+        <div className="ml-feature">
+          <span>Nearest Competitor</span>
+          <strong>
+            {mlPrediction.geographicFeatures.nearest_competitor_m ?? 0} m
+          </strong>
+        </div>
+
+        <div className="ml-feature">
+          <span>POI Density / km²</span>
+          <strong>
+            {mlPrediction.geographicFeatures.poi_density_1km ?? 0}
+          </strong>
+        </div>
+
+        <div className="ml-feature">
+          <span>Category POIs</span>
+          <strong>
+            {mlPrediction.geographicFeatures.category_poi_count ?? 0}
+          </strong>
+        </div>
+
+      </div>
+
+    )}
+{mlPrediction.geographicFeatures.geographic_signals &&
+  mlPrediction.geographicFeatures.geographic_signals.length > 0 && (
+    <div className="ml-signals">
+
+      <div className="ml-signals-header">
+        <span className="section-label">
+          GEOGRAPHIC SIGNALS
+        </span>
+
+        <h3>
+          Why this location?
+        </h3>
+
+        <p>
+          Key geographic factors considered by the analysis.
+        </p>
+      </div>
+ {mlPrediction.geographicFeatures &&
+  mlPrediction.geographicFeatures.category_data_available === false && (
+    <div className="ml-data-warning">
+
+      <div className="ml-data-warning-icon">
+        ⚠
+      </div>
+
+      <div className="ml-data-warning-content">
+
+        <strong>
+          Limited Category Data
+        </strong>
+
+        <p>
+          {mlPrediction.geographicFeatures.category_data_warning ||
+            "Category-specific OSM data is unavailable for this category. The prediction should be interpreted with caution."}
+        </p>
+
+      </div>
+
+    </div>
+  )}
+      <div className="ml-signals-list">
+
+        {mlPrediction.geographicFeatures.geographic_signals.map(
+          (signal, index) => (
+            <div
+              className="ml-signal"
+              key={index}
+            >
+              <span className="ml-signal-icon">
+                ✓
+              </span>
+
+              <span>
+                {signal}
+              </span>
+            </div>
+          )
+        )}
+
+      </div>
+
+    </div>
+  )}
+
+    <div className="ml-prediction-note">
+
+
+      <span>ℹ️</span>
+
+      <p>
+        {mlPrediction.interpretation ||
+          "ML prediction based on geographic opportunity features."}
+      </p>
+
+    </div>
+
+  </div>
+)}
 
               <ScoreCard
                 icon="📈"

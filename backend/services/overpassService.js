@@ -878,16 +878,76 @@ function isInfrastructure(tags = {}) {
 // ============================================================
 
 function determineObjectType(tags = {}) {
+  const highway = cleanString(tags.highway);
+  const railway = cleanString(tags.railway);
+  const amenity = cleanString(tags.amenity);
+  const publicTransport = cleanString(tags.public_transport);
+  const crossing = cleanString(tags.crossing);
+  const cycleway = cleanString(tags.cycleway);
 
+  // Keep businesses classified as businesses
   if (isBusiness(tags)) {
     return "business";
   }
 
-  if (tags.highway) {
+  // Parking
+  if (
+    amenity === "parking" ||
+    tags.parking
+  ) {
+    return "parking";
+  }
+
+  // Public transport
+  if (
+    publicTransport ||
+    highway === "bus_stop" ||
+    amenity === "bus_station" ||
+    amenity === "taxi" ||
+    [
+      "station",
+      "halt",
+      "tram_stop",
+      "subway_entrance",
+    ].includes(railway)
+  ) {
+    return "transport";
+  }
+
+  // Pedestrian crossings
+  if (
+    highway === "crossing" ||
+    crossing
+  ) {
+    return "crossing";
+  }
+
+  // Cycle infrastructure
+  if (
+    highway === "cycleway" ||
+    cycleway
+  ) {
+    return "cycleway";
+  }
+
+  // Footpaths and pedestrian areas
+  if (
+    [
+      "footway",
+      "pedestrian",
+      "steps",
+      "path",
+    ].includes(highway)
+  ) {
+    return "walkable";
+  }
+
+  // General roads
+  if (highway) {
     return "road";
   }
 
-  if (tags.railway) {
+  if (railway) {
     return "railway";
   }
 
@@ -909,7 +969,6 @@ function determineObjectType(tags = {}) {
 
   return "place";
 }
-
 
 // ============================================================
 // ADDRESS
@@ -947,65 +1006,63 @@ function extractAddress(tags = {}) {
 // ============================================================
 // COORDINATES
 // ============================================================
-
 function extractCoordinates(element) {
-
-  let latitude = null;
-  let longitude = null;
-
+  // 1. Direct coordinates (OSM nodes)
   if (
     Number.isFinite(Number(element.lat)) &&
-    Number.isFinite(Number(element.lon))
+    Number.isFinite(Number(element.lon)) &&
+    element.lat != null &&
+    element.lon != null
   ) {
-    latitude = Number(element.lat);
-    longitude = Number(element.lon);
+    return {
+      lat: Number(element.lat),
+      lon: Number(element.lon),
+    };
   }
 
-  else if (
-    element.center &&
-    Number.isFinite(Number(element.center.lat)) &&
-    Number.isFinite(Number(element.center.lon))
+  // 2. Center coordinates (OSM ways and relations)
+  if (
+    element.center?.lat != null &&
+    element.center?.lon != null
   ) {
-    latitude = Number(element.center.lat);
-    longitude = Number(element.center.lon);
+    return {
+      lat: Number(element.center.lat),
+      lon: Number(element.center.lon),
+    };
   }
 
-  else if (
+  // 3. Geometry coordinates (fallback)
+  if (
     Array.isArray(element.geometry) &&
     element.geometry.length > 0
   ) {
-
-    const validPoints =
-      element.geometry.filter(
-        point =>
-          Number.isFinite(Number(point.lat)) &&
-          Number.isFinite(Number(point.lon))
-      );
+    const validPoints = element.geometry.filter(
+      (point) =>
+        point.lat != null &&
+        point.lon != null &&
+        Number.isFinite(Number(point.lat)) &&
+        Number.isFinite(Number(point.lon))
+    );
 
     if (validPoints.length > 0) {
-
-      latitude =
+      const lat =
         validPoints.reduce(
-          (sum, point) =>
-            sum + Number(point.lat),
+          (sum, point) => sum + Number(point.lat),
           0
         ) / validPoints.length;
 
-      longitude =
+      const lon =
         validPoints.reduce(
-          (sum, point) =>
-            sum + Number(point.lon),
+          (sum, point) => sum + Number(point.lon),
           0
         ) / validPoints.length;
+
+      return { lat, lon };
     }
   }
 
-  return {
-    latitude,
-    longitude,
-  };
+  return null;
 }
-
 
 // ============================================================
 // NORMALIZE ELEMENT
@@ -1024,18 +1081,21 @@ function normalizeElement(element) {
   const tags =
     element.tags || {};
 
-  const {
-    latitude,
-    longitude,
-  } =
-    extractCoordinates(element);
+ const coordinates = extractCoordinates(element);
 
-  if (
-    latitude === null ||
-    longitude === null
-  ) {
-    return null;
-  }
+if (!coordinates) {
+  return null;
+}
+
+const latitude = coordinates.lat;
+const longitude = coordinates.lon;
+
+ if (
+  !Number.isFinite(latitude) ||
+  !Number.isFinite(longitude)
+) {
+  return null;
+}
 
   const businessType =
     normalizeBusinessType(tags);
@@ -1114,10 +1174,28 @@ function normalizeElement(element) {
       tags.landuse || null,
 
     highway:
-      tags.highway || null,
+  tags.highway || null,
 
-    railway:
-      tags.railway || null,
+railway:
+  tags.railway || null,
+
+public_transport:
+  tags.public_transport || null,
+
+crossing:
+  tags.crossing || null,
+
+cycleway:
+  tags.cycleway || null,
+
+bicycle:
+  tags.bicycle || null,
+
+bus:
+  tags.bus || null,
+
+park_ride:
+  tags.park_ride || null,
 
     address:
       extractAddress(tags),
@@ -1507,82 +1585,95 @@ out center tags;
 //
 // ============================================================
 
+
 function buildQuery(
   latitude,
   longitude,
   radiusInMeters
 ) {
+  const lat = Number(latitude);
+  const lon = Number(longitude);
+  const radius = Number(radiusInMeters);
+
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lon) ||
+    !Number.isFinite(radius) ||
+    lat < -90 ||
+    lat > 90 ||
+    lon < -180 ||
+    lon > 180 ||
+    radius <= 0
+  ) {
+    throw new Error(
+      "Invalid Overpass search parameters."
+    );
+  }
 
   return `
 [out:json][timeout:55];
 
 (
-  nwr["shop"](
-    around:${radiusInMeters},
-    ${latitude},
-    ${longitude}
-  );
+  // --------------------------------------------------------
+  // BUSINESSES AND AMENITIES
+  // --------------------------------------------------------
 
-  nwr["amenity"~"restaurant|cafe|fast_food|food_court|pharmacy|hospital|clinic|doctors|dentist|bank|atm|fuel|marketplace|veterinary"](
-    around:${radiusInMeters},
-    ${latitude},
-    ${longitude}
-  );
+  nwr["shop"](around:${radius},${lat},${lon});
+  nwr["amenity"](around:${radius},${lat},${lon});
+  nwr["healthcare"](around:${radius},${lat},${lon});
+  nwr["office"](around:${radius},${lat},${lon});
+  nwr["craft"](around:${radius},${lat},${lon});
+  nwr["tourism"](around:${radius},${lat},${lon});
+  nwr["leisure"](around:${radius},${lat},${lon});
+  nwr["sport"](around:${radius},${lat},${lon});
+  nwr["education"](around:${radius},${lat},${lon});
 
-  nwr["tourism"~"hotel|hostel|guest_house|motel|attraction"](
-    around:${radiusInMeters},
-    ${latitude},
-    ${longitude}
-  );
+  // --------------------------------------------------------
+  // PUBLIC TRANSPORT
+  // --------------------------------------------------------
 
-  nwr["leisure"~"fitness_centre|sports_centre|stadium|park|garden"](
-    around:${radiusInMeters},
-    ${latitude},
-    ${longitude}
-  );
+  nwr["public_transport"](around:${radius},${lat},${lon});
+  nwr["highway"="bus_stop"](around:${radius},${lat},${lon});
+  nwr["amenity"="bus_station"](around:${radius},${lat},${lon});
+  nwr["amenity"="taxi"](around:${radius},${lat},${lon});
 
-  nwr["education"~"school|college|university"](
-    around:${radiusInMeters},
-    ${latitude},
-    ${longitude}
-  );
+  nwr["railway"="station"](around:${radius},${lat},${lon});
+  nwr["railway"="halt"](around:${radius},${lat},${lon});
+  nwr["railway"="tram_stop"](around:${radius},${lat},${lon});
 
-  nwr["healthcare"](
-    around:${radiusInMeters},
-    ${latitude},
-    ${longitude}
-  );
+  // --------------------------------------------------------
+  // ROAD NETWORK
+  // --------------------------------------------------------
 
-  nwr["office"](
-    around:${radiusInMeters},
-    ${latitude},
-    ${longitude}
-  );
+  way["highway"](around:${radius},${lat},${lon});
 
-  nwr["craft"](
-    around:${radiusInMeters},
-    ${latitude},
-    ${longitude}
-  );
+  // --------------------------------------------------------
+  // CROSSINGS AND CYCLEWAYS
+  // --------------------------------------------------------
 
-  nwr["railway"~"station|halt|tram_stop|subway_entrance"](
-    around:${radiusInMeters},
-    ${latitude},
-    ${longitude}
-  );
+  nwr["highway"="crossing"](around:${radius},${lat},${lon});
+  nwr["crossing"](around:${radius},${lat},${lon});
 
-  nwr["highway"="bus_stop"](
-    around:${radiusInMeters},
-    ${latitude},
-    ${longitude}
-  );
+  way["cycleway"](around:${radius},${lat},${lon});
+
+  // --------------------------------------------------------
+  // PARKING
+  // --------------------------------------------------------
+
+  nwr["amenity"="parking"](around:${radius},${lat},${lon});
+  nwr["parking"](around:${radius},${lat},${lon});
+
+  // --------------------------------------------------------
+  // BUILDINGS AND LAND USE
+  // --------------------------------------------------------
+
+  nwr["building"](around:${radius},${lat},${lon});
+  nwr["landuse"](around:${radius},${lat},${lon});
 );
 
 out center tags;
 `;
 }
-
-
 // ============================================================
 // VALIDATION
 // ============================================================

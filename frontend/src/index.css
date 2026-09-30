@@ -1,29 +1,41 @@
 /* =====================================================
-   GLOBAL RESET
+   BIZLENS AI — GLOBAL STYLES
 ===================================================== */
 
 * {
   box-sizing: border-box;
 }
 
-html,
-body,
-#root {
-  margin: 0;
-  padding: 0;
-  min-height: 100%;
-  width: 100%;
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  font-family:
-    Arial,
-    Helvetica,
-    sans-serif;
+  margin: 0;
 
-  background: #f5f7fb;
-  color: #1f2937;
+  min-width: 320px;
+  min-height: 100vh;
+
+  background: var(--background);
+  color: var(--text-primary);
+
+  font-family: var(--font-family);
+  font-size: 14px;
+  line-height: 1.5;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+
+/* =====================================================
+   ROOT
+===================================================== */
+
+#root {
+  min-height: 100vh;
+}
+
 
 /* =====================================================
    HEADINGS
@@ -35,83 +47,91 @@ h3,
 h4,
 h5,
 h6 {
-  color: #1f2937;
+  margin-top: 0;
+
+  color: var(--text-primary);
+
+  font-family: var(--font-family);
+  line-height: 1.25;
+}
+
+
+/* =====================================================
+   PARAGRAPHS
+===================================================== */
+
+p {
   margin-top: 0;
 }
 
-p {
-  color: #4b5563;
-}
-
-/* =====================================================
-   LABELS
-===================================================== */
-
-label {
-  display: block;
-  color: #374151;
-  font-weight: 600;
-}
-
-/* =====================================================
-   INPUTS
-===================================================== */
-
-input,
-select,
-textarea {
-  font-family: inherit;
-}
-
-input:focus,
-select:focus,
-textarea:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow:
-    0 0 0 3px rgba(37, 99, 235, 0.12);
-}
-
-/* =====================================================
-   BUTTONS
-===================================================== */
-
-button {
-  font-family: inherit;
-}
-
-button:disabled {
-  opacity: 0.6;
-}
 
 /* =====================================================
    LINKS
 ===================================================== */
 
 a {
-  color: #2563eb;
+  color: inherit;
   text-decoration: none;
 }
 
-a:hover {
-  text-decoration: underline;
-}
 
 /* =====================================================
-   TABLE
+   BUTTONS
+===================================================== */
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 0;
+}
+
+
+/* =====================================================
+   IMAGES
+===================================================== */
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+
+/* =====================================================
+   LISTS
+===================================================== */
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+
+/* =====================================================
+   TABLES
 ===================================================== */
 
 table {
-  background: #ffffff;
+  width: 100%;
+  border-collapse: collapse;
 }
 
-th {
-  color: #1f2937;
+
+/* =====================================================
+   SELECTION
+===================================================== */
+
+::selection {
+  background: var(--primary-soft);
+  color: var(--primary-dark);
 }
 
-td {
-  color: #374151;
-}
 
 /* =====================================================
    SCROLLBAR
@@ -123,20 +143,31 @@ td {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--surface-soft);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 10px;
+  background: var(--border-medium);
+  border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--text-light);
 }
 
+
 /* =====================================================
-   RESPONSIVE
+   FOCUS ACCESSIBILITY
+===================================================== */
+
+:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.25);
+  outline-offset: 2px;
+}
+
+
+/* =====================================================
+   MOBILE
 ===================================================== */
 
 @media (max-width: 768px) {

@@ -1,48 +1,116 @@
 /* =====================================================
-   GLOBAL BUTTONS
+   BIZLENS AI — REUSABLE COMPONENTS
+===================================================== */
+
+
+/* =====================================================
+   BUTTONS
 ===================================================== */
 
 .biz-button {
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: 12px 20px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+
+  min-height: 42px;
+  padding: 0 18px;
+
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+  transition:
+    background var(--transition),
+    border-color var(--transition),
+    color var(--transition),
+    box-shadow var(--transition),
+    transform var(--transition);
 }
+
+.biz-button:hover {
+  transform: translateY(-1px);
+}
+
+.biz-button:active {
+  transform: translateY(0);
+}
+
+.biz-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+
+/* Primary */
 
 .biz-button-primary {
   background: var(--primary);
-  color: white;
+  color: var(--text-white);
+  box-shadow: var(--shadow-primary);
 }
 
 .biz-button-primary:hover {
   background: var(--primary-dark);
-  transform: translateY(-1px);
 }
 
+
+/* Secondary */
+
 .biz-button-secondary {
-  background: white;
+  background: var(--surface);
   color: var(--text-primary);
-  border: 1px solid var(--border);
+  border-color: var(--border);
 }
 
 .biz-button-secondary:hover {
-  background: #f9fafb;
+  background: var(--surface-hover);
+  border-color: var(--border-medium);
 }
 
+
+/* Danger */
+
 .biz-button-danger {
-  background: #fef2f2;
-  color: var(--danger);
+  background: var(--danger);
+  color: var(--text-white);
 }
 
 .biz-button-danger:hover {
-  background: #fee2e2;
+  background: #b91c1c;
+}
+
+
+/* Ghost */
+
+.biz-button-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.biz-button-ghost:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+
+/* Button sizes */
+
+.biz-button-sm {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+.biz-button-lg {
+  min-height: 48px;
+  padding: 0 22px;
+  font-size: 15px;
 }
 
 
@@ -58,20 +126,44 @@
 }
 
 
+/* Card with hover effect */
+
+.biz-card-hover {
+  transition:
+    transform var(--transition),
+    box-shadow var(--transition),
+    border-color var(--transition);
+}
+
+.biz-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-medium);
+}
+
+
 /* =====================================================
-   STAT CARD
+   STAT CARDS
 ===================================================== */
 
 .biz-stat-card {
+  position: relative;
+
+  padding: 20px;
+
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 22px;
-  transition: var(--transition);
+
+  box-shadow: var(--shadow-sm);
+
+  transition:
+    transform var(--transition),
+    box-shadow var(--transition);
 }
 
 .biz-stat-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
@@ -81,30 +173,279 @@
 ===================================================== */
 
 .biz-icon-box {
-  width: 44px;
-  height: 44px;
-
-  border-radius: 12px;
-
   display: flex;
   align-items: center;
   justify-content: center;
 
+  width: 42px;
+  height: 42px;
+
+  border-radius: var(--radius-md);
+
+  flex-shrink: 0;
+}
+
+
+/* Icon variants */
+
+.biz-icon-box-blue {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.biz-icon-box-green {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.biz-icon-box-orange {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+.biz-icon-box-red {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.biz-icon-box-purple {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+
+/* =====================================================
+   BADGES
+===================================================== */
+
+.biz-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 26px;
+  padding: 0 10px;
+
+  border-radius: var(--radius-full);
+
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.biz-badge-blue {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+.biz-badge-green {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.biz-badge-orange {
+  background: var(--warning-light);
+  color: #b45309;
+}
+
+.biz-badge-red {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.biz-badge-gray {
+  background: var(--surface-hover);
+  color: var(--text-secondary);
+}
+
+
+/* =====================================================
+   SECTION HEADER
+===================================================== */
+
+.biz-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  margin-bottom: 20px;
+}
+
+.biz-section-title {
+  margin: 0;
+
+  color: var(--text-primary);
+
   font-size: 20px;
+  font-weight: 700;
 }
 
-.biz-icon-blue {
-  background: #eff6ff;
+.biz-section-subtitle {
+  margin: 4px 0 0;
+
+  color: var(--text-secondary);
+
+  font-size: 14px;
+  line-height: 1.5;
 }
 
-.biz-icon-green {
-  background: #f0fdf4;
+
+/* =====================================================
+   FORM ELEMENTS
+===================================================== */
+
+.biz-input,
+.biz-select,
+.biz-textarea {
+  width: 100%;
+
+  padding: 11px 13px;
+
+  background: var(--surface);
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+
+  color: var(--text-primary);
+
+  font-family: var(--font-family);
+  font-size: 14px;
+
+  outline: none;
+
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition);
 }
 
-.biz-icon-orange {
-  background: #fff7ed;
+.biz-input::placeholder,
+.biz-textarea::placeholder {
+  color: var(--text-muted);
 }
 
-.biz-icon-purple {
-  background: #faf5ff;
+.biz-input:focus,
+.biz-select:focus,
+.biz-textarea:focus {
+  border-color: var(--border-focus);
+
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.10);
+}
+
+.biz-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+
+/* =====================================================
+   LABEL
+===================================================== */
+
+.biz-label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: var(--text-primary);
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+
+/* =====================================================
+   DIVIDER
+===================================================== */
+
+.biz-divider {
+  width: 100%;
+  height: 1px;
+
+  background: var(--border);
+}
+
+
+/* =====================================================
+   EMPTY STATE
+===================================================== */
+
+.biz-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 220px;
+  padding: 32px;
+
+  text-align: center;
+
+  background: var(--surface);
+  border: 1px dashed var(--border-medium);
+  border-radius: var(--radius-lg);
+}
+
+.biz-empty-state-icon {
+  margin-bottom: 12px;
+
+  color: var(--text-light);
+}
+
+.biz-empty-state-title {
+  margin: 0 0 6px;
+
+  color: var(--text-primary);
+
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.biz-empty-state-text {
+  max-width: 420px;
+  margin: 0;
+
+  color: var(--text-secondary);
+
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+
+/* =====================================================
+   LOADING
+===================================================== */
+
+.biz-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 40px;
+
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (max-width: 768px) {
+
+  .biz-button {
+    min-height: 40px;
+  }
+
+  .biz-section-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .biz-section-title {
+    font-size: 18px;
+  }
+
 }

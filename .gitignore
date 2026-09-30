@@ -54,3 +54,7 @@ ml-service/models/*.joblib
 # Local data
 ml-service/data/raw/
 ml-service/data/processed/
+
+# ML debugging scripts
+ml-service/check_holdout_probabilities.py
+ml-service/check_probability_distribution.py

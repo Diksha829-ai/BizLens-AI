@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import "../styles/variables.css";
-import "../styles/components.css";
 import "../styles/business-category.css";
 
 function BusinessCategory() {

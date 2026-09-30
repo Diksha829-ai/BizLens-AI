@@ -28,6 +28,10 @@ const analysisSchema = new mongoose.Schema(
       required: true,
     },
 
+    // ============================================================
+    // EXISTING BUSINESS ANALYSIS SCORES
+    // ============================================================
+
     successScore: {
       type: Number,
       default: 0,
@@ -78,6 +82,47 @@ const analysisSchema = new mongoose.Schema(
     recommendations: {
       type: [String],
       default: [],
+    },
+
+    // ============================================================
+    // ML GEOGRAPHIC OPPORTUNITY PREDICTION
+    // ============================================================
+
+    mlPrediction: {
+      prediction: {
+        type: Number,
+        default: null,
+      },
+
+      predictionLabel: {
+        type: String,
+        default: null,
+      },
+
+      opportunityProbability: {
+        type: Number,
+        default: null,
+      },
+
+      opportunityProbabilityPercent: {
+        type: Number,
+        default: null,
+      },
+
+      lowerOpportunityProbability: {
+        type: Number,
+        default: null,
+      },
+
+      geographicFeatures: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null,
+      },
+
+      interpretation: {
+        type: String,
+        default: null,
+      },
     },
   },
   {

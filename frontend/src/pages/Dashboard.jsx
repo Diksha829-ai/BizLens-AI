@@ -1,7 +1,4 @@
 import { useNavigate } from "react-router-dom";
-
-import "../styles/variables.css";
-import "../styles/components.css";
 import "../styles/dashboard.css";
 
 function Dashboard() {
@@ -540,7 +537,7 @@ function Dashboard() {
               </div>
 
               <strong className="stat-value">
-                7
+                42
               </strong>
 
               <span className="stat-description">
