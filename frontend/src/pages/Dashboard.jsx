@@ -154,18 +154,15 @@ function Dashboard() {
           <button
             className="sidebar-item"
             type="button"
+            
             onClick={() => {
+  if (!isLoggedIn) {
+    navigate("/login");
+    return;
+  }
 
-              if (!isLoggedIn) {
-                navigate("/login");
-                return;
-              }
-
-              alert(
-                "Saved analyses will be added later."
-              );
-
-            }}
+  navigate("/saved-analyses");
+}}
           >
             <span>📁</span>
 

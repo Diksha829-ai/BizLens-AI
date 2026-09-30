@@ -7,6 +7,7 @@ import LocationSelection from "./pages/LocationSelection";
 import BusinessCategory from "./pages/BusinessCategory";
 import AnalysisPreview from "./pages/AnalysisPreview";
 import Analysis from "./pages/Analysis";
+import SavedAnalyses from "./pages/SavedAnalyses";
 
 // =====================================================
 // PROTECTED ROUTE
@@ -127,6 +128,14 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+  path="/saved-analyses"
+  element={
+    <ProtectedRoute>
+      <SavedAnalyses />
+    </ProtectedRoute>
+  }
+/>
 
       {/* =================================================
           UNKNOWN ROUTE

@@ -2405,9 +2405,123 @@ const analyzeLocation = async (req, res) => {
         confidence:
           scoring.confidence,
 
+                // ====================================================
+        // DETAILED ANALYSIS DATA
+        // ====================================================
+
+        competitors: {
+          count:
+            competitorCount,
+
+          density:
+            competitionDensity,
+
+          within500m,
+
+          within1km,
+
+          within2km,
+
+          nearest:
+            nearestCompetitor,
+
+          nearestDistance:
+            nearestCompetitor
+              ? nearestCompetitor.distance
+              : null,
+
+          averageDistance:
+            averageCompetitorDistance,
+
+          reliability:
+            competitionReliability,
+
+          score:
+            scoring.competitionScore,
+        },
+
+        competitorBusinesses:
+          sortedCompetitors,
+
+        demand: {
+          ...demand,
+
+          categoryDemandScore,
+
+          score:
+            scoring.demandScore,
+        },
+
+        accessibility: {
+          ...accessibility,
+
+          score:
+            scoring.accessibilityScore,
+        },
+
+        osmStatistics: {
+          totalObjects:
+            places.length,
+
+          businesses:
+            osmQuality.businesses ?? 0,
+
+          buildings:
+            osmQuality.buildings ?? 0,
+
+          roads:
+            osmQuality.roads ?? 0,
+
+          railways:
+            osmQuality.railways ?? 0,
+
+          landuse:
+            osmQuality.landuse ?? 0,
+
+          namedPlaces:
+            osmQuality.namedPlaces ?? 0,
+        },
+
+        dataCoverage: {
+          score:
+            coverage.score,
+
+          level:
+            coverage.level,
+
+          description:
+            "Estimated completeness of returned OpenStreetMap records. It does not represent complete real-world business coverage.",
+        },
+
+        totalPlaces:
+          places.length,
+
+        risk: {
+          score:
+            scoring.riskScore,
+
+          level:
+            scoring.riskLevel,
+        },
+
+        businessSuccess: {
+          score:
+            scoring.successScore,
+
+          level:
+            scoring.successLevel,
+
+          confidence:
+            scoring.confidence,
+
+          confidenceScore:
+            scoring.confidenceScore,
+
+          confidenceReason:
+            scoring.confidenceReason,
+        },
+
         recommendations:
-          scoring.recommendations,
-                recommendations:
           scoring.recommendations,
 
         mlPrediction:
@@ -2797,6 +2911,96 @@ const analyzeLocation = async (req, res) => {
 // GET ANALYSIS STATISTICS
 // ============================================================
 
+// ============================================================
+// SAVED ANALYSES
+// ============================================================
+
+// GET /api/analysis
+const getSavedAnalyses = async (req, res) => {
+  try {
+    const analyses = await Analysis.find({
+      user: req.user.id,
+    })
+      .sort({ createdAt: -1 })
+      .select(
+        "_id latitude longitude radius category successScore successLevel riskScore riskLevel confidenceScore confidence mlPrediction createdAt updatedAt"
+      );
+
+    res.status(200).json({
+      success: true,
+      count: analyses.length,
+      data: analyses,
+    });
+  } catch (error) {
+    console.error("Get saved analyses error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch saved analyses.",
+    });
+  }
+};
+
+
+// GET /api/analysis/:id
+const getSavedAnalysisById = async (req, res) => {
+  try {
+    const analysis = await Analysis.findOne({
+      _id: req.params.id,
+      user: req.user.id,
+    });
+
+    if (!analysis) {
+      return res.status(404).json({
+        success: false,
+        message: "Analysis not found.",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: analysis,
+    });
+  } catch (error) {
+    console.error("Get saved analysis error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch analysis.",
+    });
+  }
+};
+
+
+// DELETE /api/analysis/:id
+const deleteSavedAnalysis = async (req, res) => {
+  try {
+    const analysis = await Analysis.findOneAndDelete({
+      _id: req.params.id,
+      user: req.user.id,
+    });
+
+    if (!analysis) {
+      return res.status(404).json({
+        success: false,
+        message: "Analysis not found.",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Analysis deleted successfully.",
+    });
+  } catch (error) {
+    console.error("Delete saved analysis error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete analysis.",
+    });
+  }
+};
+
 const getAnalysisStats = async (
   req,
   res
@@ -2961,4 +3165,7 @@ const getAnalysisStats = async (
 module.exports = {
   analyzeLocation,
   getAnalysisStats,
+  getSavedAnalyses,
+  getSavedAnalysisById,
+  deleteSavedAnalysis,
 };

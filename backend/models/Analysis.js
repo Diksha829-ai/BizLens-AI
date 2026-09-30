@@ -85,6 +85,75 @@ const analysisSchema = new mongoose.Schema(
     },
 
     // ============================================================
+    // DETAILED COMPETITION DATA
+    // ============================================================
+
+    competitors: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+
+    competitorBusinesses: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+
+    // ============================================================
+    // DETAILED DEMAND DATA
+    // ============================================================
+
+    demand: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+
+    // ============================================================
+    // ACCESSIBILITY DATA
+    // ============================================================
+
+    accessibility: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+
+    // ============================================================
+    // LOCATION / OSM DATA
+    // ============================================================
+
+    osmStatistics: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+
+    dataCoverage: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+
+    totalPlaces: {
+      type: Number,
+      default: 0,
+    },
+
+    // ============================================================
+    // RISK DETAILS
+    // ============================================================
+
+    risk: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+
+    // ============================================================
+    // BUSINESS SUCCESS DETAILS
+    // ============================================================
+
+    businessSuccess: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+
+    // ============================================================
     // ML GEOGRAPHIC OPPORTUNITY PREDICTION
     // ============================================================
 

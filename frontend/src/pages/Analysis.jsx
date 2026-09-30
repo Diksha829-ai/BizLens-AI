@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import {
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 
 import {
   MapContainer,
@@ -65,9 +68,12 @@ const CATEGORY_NAMES = {
 // ============================================================
 // ANALYSIS COMPONENT
 // ============================================================
-
 function Analysis() {
   const navigate = useNavigate();
+
+  const [searchParams] = useSearchParams();
+
+  const savedId = searchParams.get("savedId");
 
   // ==========================================================
   // LOCATION
@@ -91,28 +97,176 @@ function Analysis() {
   const [analysisData, setAnalysisData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
   // ==========================================================
   // LOAD SAVED DATA
   // ==========================================================
 
   useEffect(() => {
+  const loadAnalysisData = async () => {
+    // ========================================================
+    // SAVED ANALYSIS MODE
+    // ========================================================
+
+    if (savedId) {
+      try {
+        setLoading(true);
+        setError("");
+
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          navigate("/login");
+          return;
+        }
+
+        console.log(
+          "Loading saved analysis:",
+          savedId
+        );
+
+        const response = await fetch(
+          `http://localhost:5000/api/analysis/${savedId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = await response.json();
+
+        console.log(
+          "Saved analysis response:",
+          data
+        );
+
+        if (
+          response.status === 401 ||
+          response.status === 403
+        ) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+
+          navigate("/login");
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+              "Failed to load saved analysis."
+          );
+        }
+
+        const savedAnalysis = data.data;
+
+        if (!savedAnalysis) {
+          throw new Error(
+            "Saved analysis data was not found."
+          );
+        }
+
+        // ----------------------------------------------------
+        // LOCATION
+        // ----------------------------------------------------
+
+        setLatitude(
+          Number(savedAnalysis.latitude)
+        );
+
+        setLongitude(
+          Number(savedAnalysis.longitude)
+        );
+
+        setAddress(
+          `${savedAnalysis.latitude}, ${savedAnalysis.longitude}`
+        );
+
+        // ----------------------------------------------------
+        // BUSINESS
+        // ----------------------------------------------------
+
+        setRadius(
+          Number(savedAnalysis.radius) || 3
+        );
+
+        setCategory(
+          savedAnalysis.category
+        );
+
+        // ----------------------------------------------------
+        // ANALYSIS RESULT
+        // ----------------------------------------------------
+
+        setAnalysisData(savedAnalysis);
+
+        console.log(
+          "Saved analysis loaded successfully."
+        );
+
+      } catch (error) {
+        console.error(
+          "Error loading saved analysis:",
+          error
+        );
+
+        setError(
+          error.message ||
+            "Unable to load saved analysis."
+        );
+      } finally {
+        setLoading(false);
+      }
+
+      return;
+    }
+
+    // ========================================================
+    // NORMAL NEW ANALYSIS MODE
+    // ========================================================
+
     try {
       const savedLocation =
-        localStorage.getItem("selectedLocation");
+        localStorage.getItem(
+          "selectedLocation"
+        );
 
       const savedCategory =
-        localStorage.getItem("selectedCategory");
+        localStorage.getItem(
+          "selectedCategory"
+        );
 
       const savedRadius =
-        localStorage.getItem("analysisRadius");
+        localStorage.getItem(
+          "analysisRadius"
+        );
 
-      console.log("======================================");
-      console.log("Analysis Page - Loading Data");
-      console.log("Selected Location:", savedLocation);
-      console.log("Selected Category:", savedCategory);
-      console.log("Selected Radius:", savedRadius);
-      console.log("======================================");
+      console.log(
+        "======================================"
+      );
+
+      console.log(
+        "Analysis Page - Loading Data"
+      );
+
+      console.log(
+        "Selected Location:",
+        savedLocation
+      );
+
+      console.log(
+        "Selected Category:",
+        savedCategory
+      );
+
+      console.log(
+        "Selected Radius:",
+        savedRadius
+      );
+
+      console.log(
+        "======================================"
+      );
 
       // ------------------------------------------------------
       // LOCATION
@@ -125,10 +279,14 @@ function Analysis() {
         return;
       }
 
-      const location = JSON.parse(savedLocation);
+      const location =
+        JSON.parse(savedLocation);
 
-      const selectedLatitude = Number(location.latitude);
-      const selectedLongitude = Number(location.longitude);
+      const selectedLatitude =
+        Number(location.latitude);
+
+      const selectedLongitude =
+        Number(location.longitude);
 
       if (
         Number.isNaN(selectedLatitude) ||
@@ -141,6 +299,7 @@ function Analysis() {
       }
 
       setLatitude(selectedLatitude);
+
       setLongitude(selectedLongitude);
 
       setAddress(
@@ -168,12 +327,14 @@ function Analysis() {
       // ------------------------------------------------------
 
       if (savedRadius) {
-        const parsedRadius = Number(savedRadius);
+        const parsedRadius =
+          Number(savedRadius);
 
         if (!Number.isNaN(parsedRadius)) {
           setRadius(parsedRadius);
         }
       }
+
     } catch (error) {
       console.error(
         "Error loading analysis data:",
@@ -184,8 +345,10 @@ function Analysis() {
         "Unable to load the selected analysis information."
       );
     }
-  }, []);
+  };
 
+  loadAnalysisData();
+}, [savedId, navigate]);
   // ==========================================================
   // ANALYZE LOCATION
   // ==========================================================
