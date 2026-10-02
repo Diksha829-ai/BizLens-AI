@@ -1018,8 +1018,11 @@ function detectCompetitor(place, category) {
   }
 
   // 3. Existing normalized category
+  const normalizedPlaceCategory =
+    normalizeCategory(place.category);
+
   if (
-    normalizeCategory(place.category) ===
+    normalizedPlaceCategory ===
     normalizedSelectedCategory
   ) {
     return {
@@ -1029,7 +1032,23 @@ function detectCompetitor(place, category) {
     };
   }
 
-  // 4. Business name
+  // 4. Explicitly different category
+  // Do not let name-based matching override
+  // an existing OSM/business category.
+  if (
+    normalizedPlaceCategory &&
+    normalizedPlaceCategory !== "unknown" &&
+    normalizedPlaceCategory !==
+      normalizedSelectedCategory
+  ) {
+    return {
+      isCompetitor: false,
+      detectionMethod: "different_category",
+      detectionConfidence: "High",
+    };
+  }
+
+  // 5. Business name
   if (
     hasNameKeyword(
       place,
@@ -1043,7 +1062,7 @@ function detectCompetitor(place, category) {
     };
   }
 
-  // 5. Fallback keywords
+  // 6. Fallback keywords
   const searchableText = [
     place.name || "",
     place.category || "",
@@ -1136,7 +1155,6 @@ function detectCompetitor(place, category) {
     detectionConfidence: "None",
   };
 }
-
 // ============================================================
 // DISTANCE CALCULATION
 // ============================================================
@@ -1590,33 +1608,7 @@ const analyzeLocation = async (req, res) => {
     // COMPETITOR DETECTION
     // --------------------------------------------------------
 
-    console.log(
-      "\n========== COMPETITOR DEBUG =========="
-    );
 
-    console.log(
-      "Selected category:",
-      normalizedCategory
-    );
-
-    console.log(
-      "Total places received:",
-      places.length
-    );
-
-    console.log(
-      "Sample OSM places:",
-      places.slice(0, 25).map(
-        (place) => ({
-          name: place.name,
-          type: place.type,
-          category: place.category,
-          latitude: place.latitude,
-          longitude: place.longitude,
-          tags: place.tags,
-        })
-      )
-    );
 
     const competitorResults =
       places.map((place) => {
@@ -1631,61 +1623,10 @@ const analyzeLocation = async (req, res) => {
           ...detection,
         };
       });
-
-    const detectedCompetitors =
-      competitorResults.filter(
-        (place) => place.isCompetitor
-      );
-
-    console.log(
-      "Total detected competitors:",
-      detectedCompetitors.length
-    );
-
-    console.log(
-      "Detected competitor names:",
-      detectedCompetitors.map(
-        (place) => place.name
-      )
-    );
-
-    // Bakery debugging
-    console.log(
-      "Bakery matching debug:",
-      competitorResults
-        .filter((place) => {
-          const text = [
-            place.name,
-            place.category,
-            place.type,
-            JSON.stringify(
-              place.tags || {}
-            ),
-          ]
-            .join(" ")
-            .toLowerCase();
-
-          return (
-            text.includes("bakery") ||
-            text.includes("baker") ||
-            text.includes("cake") ||
-            text.includes("bread")
-          );
-        })
-        .map((place) => ({
-          name: place.name,
-          category: place.category,
-          type: place.type,
-          tags: place.tags,
-          isCompetitor:
-            place.isCompetitor,
-        }))
-    );
-
-    console.log(
-      "======================================\n"
-    );
-
+const detectedCompetitors =
+  competitorResults.filter(
+    (place) => place.isCompetitor
+  );
     // --------------------------------------------------------
     // ADD DISTANCE TO COMPETITORS
     // --------------------------------------------------------
@@ -1748,23 +1689,6 @@ const analyzeLocation = async (req, res) => {
             place.distance <=
               parsedRadius
         );
-
-    console.log(
-      "Competitors within selected radius:",
-      competitorsWithDistance.length
-    );
-
-    console.log(
-      "Competitor distances:",
-      competitorsWithDistance.map(
-        (place) => ({
-          name: place.name,
-          distance:
-            `${place.distance} km`,
-        })
-      )
-    );
-
     // --------------------------------------------------------
     // COMPETITION METRICS
     // --------------------------------------------------------
@@ -2296,28 +2220,28 @@ const analyzeLocation = async (req, res) => {
         tags.cycleway ||
         tags.bus
       ) {
-        console.log(
-          "ACCESSIBILITY OSM OBJECT:",
-          {
-            name: place.name,
-            objectType:
-              place.objectType,
-            highway:
-              tags.highway,
-            amenity:
-              tags.amenity,
-            public_transport:
-              tags.public_transport,
-            railway:
-              tags.railway,
-            crossing:
-              tags.crossing,
-            cycleway:
-              tags.cycleway,
-            bus:
-              tags.bus,
-          }
-        );
+    //     console.log(
+    //       "ACCESSIBILITY OSM OBJECT:",
+    //       {
+    //         name: place.name,
+    //         objectType:
+    //           place.objectType,
+    //         highway:
+    //           tags.highway,
+    //         amenity:
+    //           tags.amenity,
+    //         public_transport:
+    //           tags.public_transport,
+    //         railway:
+    //           tags.railway,
+    //         crossing:
+    //           tags.crossing,
+    //         cycleway:
+    //           tags.cycleway,
+    //         bus:
+    //           tags.bus,
+    //       }
+    //     );
       }
     });
 
