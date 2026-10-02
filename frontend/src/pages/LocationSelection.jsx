@@ -20,12 +20,13 @@ import "leaflet/dist/leaflet.css";
 
 import { useNavigate } from "react-router-dom";
 import "./../styles/location-selection.css";
+
 // =====================================================
 // MAHARASHTRA MAP CONFIGURATION
 // =====================================================
 
 // Maharashtra approximate geographic bounds
-// South-West  -> North-East
+// South-West -> North-East
 const MAHARASHTRA_BOUNDS = [
   [15.5, 72.5],
   [22.2, 80.9],
@@ -71,10 +72,7 @@ const locationIcon = L.divIcon({
 // CHECK WHETHER LOCATION IS INSIDE MAHARASHTRA
 // =====================================================
 
-function isInsideMaharashtra(
-  latitude,
-  longitude
-) {
+function isInsideMaharashtra(latitude, longitude) {
   const lat = Number(latitude);
   const lng = Number(longitude);
 
@@ -86,10 +84,8 @@ function isInsideMaharashtra(
   }
 
   const [
-    [south,
-      west],
-    [north,
-      east],
+    [south, west],
+    [north, east],
   ] = MAHARASHTRA_BOUNDS;
 
   return (
@@ -214,7 +210,6 @@ function MapController({
     // NORMAL STATE
     // Do not move map when user clicks
     // -------------------------------------------------
-
   }, [
     latitude,
     longitude,
@@ -464,8 +459,6 @@ function LocationSelection() {
           );
         }
 
-        // Saved location exists.
-        // Map controller will zoom to it.
         setMapAction(
           "search"
         );
@@ -696,9 +689,7 @@ function LocationSelection() {
       setSearchError("");
 
       // ---------------------------------------------
-      // IMPORTANT:
       // Maharashtra is added to search query.
-      // This prevents searching unrelated states.
       // ---------------------------------------------
 
       const searchQuery =
@@ -851,9 +842,13 @@ function LocationSelection() {
         "https://nominatim.openstreetmap.org/reverse" +
         "?format=json" +
         "&lat=" +
-        encodeURIComponent(lat) +
+        encodeURIComponent(
+          lat
+        ) +
         "&lon=" +
-        encodeURIComponent(lng) +
+        encodeURIComponent(
+          lng
+        ) +
         "&zoom=18" +
         "&addressdetails=1";
 
@@ -953,6 +948,10 @@ function LocationSelection() {
         return;
       }
 
+      // ---------------------------------------------
+      // RESET PREVIOUS LOCATION READINGS
+      // ---------------------------------------------
+
       bestAccuracyRef.current =
         Infinity;
 
@@ -966,6 +965,76 @@ function LocationSelection() {
       setSearchError("");
 
       stopLocationWatch();
+
+      // ---------------------------------------------
+      // ACCEPT BEST LOCATION AFTER WAITING
+      // ---------------------------------------------
+
+      const acceptBestLocation =
+        () => {
+          if (
+            !bestPositionRef.current
+          ) {
+            stopLocationWatch();
+
+            setGettingLocation(
+              false
+            );
+
+            setSearchError(
+              "Could not get a usable location. Please try again or select your location on the map."
+            );
+
+            return;
+          }
+
+          const bestAccuracy =
+            bestPositionRef.current
+              .coords.accuracy;
+
+          console.log(
+            "Best location accuracy:",
+            Math.round(
+              bestAccuracy
+            ),
+            "meters"
+          );
+
+          // -----------------------------------------
+          // IMPORTANT:
+          // DO NOT ACCEPT VERY INACCURATE LOCATION
+          // -----------------------------------------
+
+          if (
+            bestAccuracy > 1000
+          ) {
+            stopLocationWatch();
+
+            setGettingLocation(
+              false
+            );
+
+            setSearchError(
+              `Your browser returned an inaccurate location (${Math.round(
+                bestAccuracy
+              )} m accuracy). Please search for your location or select it on the map.`
+            );
+
+            return;
+          }
+
+          // -----------------------------------------
+          // ACCEPT LOCATION <= 1 KM ACCURACY
+          // -----------------------------------------
+
+          finishCurrentLocation(
+            bestPositionRef.current
+          );
+        };
+
+      // ---------------------------------------------
+      // START BROWSER GEOLOCATION WATCH
+      // ---------------------------------------------
 
       watchIdRef.current =
         navigator.geolocation.watchPosition(
@@ -995,10 +1064,43 @@ function LocationSelection() {
               }
             );
 
-            // -----------------------------------------
-            // DO NOT ACCEPT LOCATION OUTSIDE
-            // MAHARASHTRA
-            // -----------------------------------------
+            // ---------------------------------------
+            // IGNORE INVALID ACCURACY
+            // ---------------------------------------
+
+            if (
+              !Number.isFinite(
+                accuracy
+              )
+            ) {
+              console.log(
+                "Ignoring invalid accuracy reading."
+              );
+
+              return;
+            }
+
+            // ---------------------------------------
+            // IGNORE EXTREMELY INACCURATE READING
+            // ---------------------------------------
+
+            if (
+              accuracy > 1000
+            ) {
+              console.log(
+                "Ignoring inaccurate reading:",
+                Math.round(
+                  accuracy
+                ),
+                "m"
+              );
+
+              return;
+            }
+
+            // ---------------------------------------
+            // LOCATION MUST BE INSIDE MAHARASHTRA
+            // ---------------------------------------
 
             if (
               !isInsideMaharashtra(
@@ -1006,18 +1108,16 @@ function LocationSelection() {
                 currentLongitude
               )
             ) {
-              stopLocationWatch();
-
-              setGettingLocation(
-                false
-              );
-
-              setSearchError(
-                "Your current location is outside Maharashtra. BizLens currently supports locations within Maharashtra only."
+              console.log(
+                "Ignoring location outside Maharashtra."
               );
 
               return;
             }
+
+            // ---------------------------------------
+            // KEEP BEST READING
+            // ---------------------------------------
 
             if (
               accuracy <
@@ -1028,7 +1128,19 @@ function LocationSelection() {
 
               bestPositionRef.current =
                 position;
+
+              console.log(
+                "Better location found:",
+                Math.round(
+                  accuracy
+                ),
+                "m"
+              );
             }
+
+            // ---------------------------------------
+            // VERY GOOD LOCATION
+            // ---------------------------------------
 
             if (
               accuracy <= 100
@@ -1081,54 +1193,24 @@ function LocationSelection() {
               true,
 
             timeout:
-              20000,
+              30000,
 
             maximumAge:
               0,
           }
         );
 
+      // ---------------------------------------------
+      // GIVE BROWSER TIME TO IMPROVE LOCATION
+      // ---------------------------------------------
+
       locationTimerRef.current =
-        setTimeout(() => {
-          if (
-            bestPositionRef.current
-          ) {
-            const bestAccuracy =
-              bestPositionRef.current
-                .coords.accuracy;
-
-            if (
-              bestAccuracy <=
-              1000
-            ) {
-              finishCurrentLocation(
-                bestPositionRef.current
-              );
-            } else {
-              stopLocationWatch();
-
-              setGettingLocation(
-                false
-              );
-
-              setSearchError(
-                `Your browser returned an inaccurate location (${Math.round(
-                  bestAccuracy
-                )} m accuracy). Please enable precise location/GPS and try again.`
-              );
-            }
-          } else {
-            stopLocationWatch();
-
-            setGettingLocation(
-              false
-            );
-
-            setSearchError(
-              "Could not get a location reading. Please check your browser and device location settings."
-            );
-          }
-        }, 15000);
+        setTimeout(
+          () => {
+            acceptBestLocation();
+          },
+          20000
+        );
     };
 
   // ===================================================
@@ -1136,7 +1218,9 @@ function LocationSelection() {
   // ===================================================
 
   const finishCurrentLocation =
-    async (position) => {
+    async (
+      position
+    ) => {
       if (!position) {
         return;
       }
@@ -1149,6 +1233,31 @@ function LocationSelection() {
 
       const accuracy =
         position.coords.accuracy;
+
+      // ---------------------------------------------
+      // ACCURACY SAFETY CHECK
+      // ---------------------------------------------
+
+      if (
+        !Number.isFinite(
+          accuracy
+        ) ||
+        accuracy > 1000
+      ) {
+        stopLocationWatch();
+
+        setGettingLocation(
+          false
+        );
+
+        setSearchError(
+          `The selected current location is not accurate enough (${Math.round(
+            accuracy
+          )} m). Please search or select the location on the map.`
+        );
+
+        return;
+      }
 
       // ---------------------------------------------
       // MAHARASHTRA CHECK
@@ -1179,6 +1288,10 @@ function LocationSelection() {
         false
       );
 
+      // ---------------------------------------------
+      // REVERSE GEOCODE
+      // ---------------------------------------------
+
       const name =
         await reverseGeocode(
           lat,
@@ -1192,6 +1305,10 @@ function LocationSelection() {
 
         return;
       }
+
+      // ---------------------------------------------
+      // SAVE LOCATION
+      // ---------------------------------------------
 
       setLatitude(lat);
 
@@ -1257,10 +1374,14 @@ function LocationSelection() {
         const currentLocation =
           {
             latitude:
-              Number(latitude),
+              Number(
+                latitude
+              ),
 
             longitude:
-              Number(longitude),
+              Number(
+                longitude
+              ),
 
             address:
               placeName ||
@@ -1374,7 +1495,9 @@ function LocationSelection() {
 
     setRadius(3);
 
-    setLocationAccuracy(null);
+    setLocationAccuracy(
+      null
+    );
 
     setMapAction(
       "normal"
@@ -1420,7 +1543,9 @@ function LocationSelection() {
       "user"
     );
 
-    navigate("/login");
+    navigate(
+      "/login"
+    );
   };
 
   // ===================================================
@@ -1460,7 +1585,6 @@ function LocationSelection() {
 
   return (
     <div className="bizlens-page">
-
 
       {/* =================================================
           SIDEBAR
@@ -1707,8 +1831,7 @@ function LocationSelection() {
                 ) => {
 
                   setSearchText(
-                    event.target
-                      .value
+                    event.target.value
                   );
 
                   if (
@@ -1837,10 +1960,6 @@ function LocationSelection() {
 
                 <MapContainer
 
-                  // -------------------------------------
-                  // DEFAULT MAP VIEW
-                  // -------------------------------------
-
                   center={
                     selected &&
                     latitude !== null &&
@@ -1861,10 +1980,6 @@ function LocationSelection() {
                   scrollWheelZoom={
                     true
                   }
-
-                  // -------------------------------------
-                  // RESTRICT MAP TO MAHARASHTRA
-                  // -------------------------------------
 
                   maxBounds={
                     MAHARASHTRA_BOUNDS
@@ -1887,7 +2002,7 @@ function LocationSelection() {
                 >
 
                   <TileLayer
-                    attribution='&copy; OpenStreetMap contributors'
+                    attribution="&copy; OpenStreetMap contributors"
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   />
 
@@ -1956,14 +2071,12 @@ function LocationSelection() {
 
                             <br />
 
-                            State:
-                            {" "}
+                            State:{" "}
                             Maharashtra
 
                             <br />
 
-                            Radius:
-                            {" "}
+                            Radius:{" "}
                             {radius} km
 
                             {locationAccuracy !==
@@ -1972,8 +2085,7 @@ function LocationSelection() {
 
                                 <br />
 
-                                GPS Accuracy:
-                                {" "}
+                                GPS Accuracy:{" "}
                                 {Math.round(
                                   locationAccuracy
                                 )} m
@@ -1995,8 +2107,7 @@ function LocationSelection() {
                             longitude,
                           ]}
                           radius={
-                            radius *
-                            1000
+                            radius * 1000
                           }
                           pathOptions={{
                             color:

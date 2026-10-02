@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/dashboard.css";
 
@@ -9,7 +10,6 @@ function Dashboard() {
   // =====================================================
 
   const token = localStorage.getItem("token");
-
   const isLoggedIn = !!token;
 
   // =====================================================
@@ -32,6 +32,169 @@ function Dashboard() {
   }
 
   // =====================================================
+  // DASHBOARD DATA
+  // =====================================================
+
+  const [analyses, setAnalyses] = useState([]);
+  const [loadingAnalyses, setLoadingAnalyses] = useState(false);
+  const [analysisError, setAnalysisError] = useState("");
+
+  // =====================================================
+  // FETCH SAVED ANALYSES
+  // =====================================================
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      if (!isLoggedIn) {
+        setAnalyses([]);
+        return;
+      }
+
+      try {
+        setLoadingAnalyses(true);
+        setAnalysisError("");
+
+        const response = await fetch(
+          "http://localhost:5000/api/analysis",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = await response.json();
+
+        if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          navigate("/login");
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            data.message || "Failed to load dashboard data."
+          );
+        }
+
+        setAnalyses(data.data || []);
+      } catch (error) {
+        console.error(
+          "Dashboard analysis fetch error:",
+          error
+        );
+
+        setAnalysisError(
+          error.message ||
+            "Unable to load dashboard data."
+        );
+      } finally {
+        setLoadingAnalyses(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [isLoggedIn, token, navigate]);
+
+  // =====================================================
+  // DASHBOARD STATISTICS
+  // =====================================================
+
+  const totalAnalyses = analyses.length;
+
+  const uniqueLocations = new Set(
+    analyses.map(
+      (analysis) =>
+        `${analysis.latitude},${analysis.longitude}`
+    )
+  ).size;
+
+  const uniqueCategories = new Set(
+    analyses
+      .map((analysis) => analysis.category)
+      .filter(Boolean)
+  ).size;
+
+  const validOpportunityScores = analyses
+    .map((analysis) => Number(analysis.successScore))
+    .filter((score) => Number.isFinite(score));
+
+  const averageOpportunity =
+    validOpportunityScores.length > 0
+      ? Math.round(
+          validOpportunityScores.reduce(
+            (sum, score) => sum + score,
+            0
+          ) / validOpportunityScores.length
+        )
+      : 0;
+
+  const recentAnalyses = analyses.slice(0, 5);
+// =====================================================
+// DASHBOARD INSIGHTS
+// =====================================================
+
+const highOpportunityCount = analyses.filter(
+  (analysis) => Number(analysis.successScore) >= 70
+).length;
+
+const moderateOpportunityCount = analyses.filter(
+  (analysis) =>
+    Number(analysis.successScore) >= 50 &&
+    Number(analysis.successScore) < 70
+).length;
+
+const lowerOpportunityCount = analyses.filter(
+  (analysis) => Number(analysis.successScore) < 50
+).length;
+
+const lowRiskCount = analyses.filter(
+  (analysis) => Number(analysis.riskScore) < 30
+).length;
+
+const mediumRiskCount = analyses.filter(
+  (analysis) =>
+    Number(analysis.riskScore) >= 30 &&
+    Number(analysis.riskScore) < 60
+).length;
+
+const highRiskCount = analyses.filter(
+  (analysis) => Number(analysis.riskScore) >= 60
+).length;
+
+const mlPredictionCount = analyses.filter(
+  (analysis) =>
+    analysis.mlPrediction &&
+    analysis.mlPrediction.opportunityProbabilityPercent !==
+      null &&
+    analysis.mlPrediction.opportunityProbabilityPercent !==
+      undefined
+).length;
+
+// =====================================================
+// CATEGORY DISTRIBUTION
+// =====================================================
+
+const categoryCounts = analyses.reduce(
+  (counts, analysis) => {
+    const category =
+      analysis.category || "Unknown";
+
+    counts[category] =
+      (counts[category] || 0) + 1;
+
+    return counts;
+  },
+  {}
+);
+
+const categoryDistribution = Object.entries(
+  categoryCounts
+)
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, 5);
+  // =====================================================
   // LOGOUT
   // =====================================================
 
@@ -39,7 +202,6 @@ function Dashboard() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
 
-    // Return to public dashboard
     navigate("/dashboard");
   };
 
@@ -48,18 +210,10 @@ function Dashboard() {
   // =====================================================
 
   const handleNewAnalysis = () => {
-    // ---------------------------------------------------
-    // User is not logged in
-    // ---------------------------------------------------
-
     if (!isLoggedIn) {
       navigate("/login");
       return;
     }
-
-    // ---------------------------------------------------
-    // User is logged in
-    // ---------------------------------------------------
 
     navigate("/location-selection");
   };
@@ -81,6 +235,32 @@ function Dashboard() {
   };
 
   // =====================================================
+  // VIEW SAVED ANALYSIS
+  // =====================================================
+
+  const handleViewAnalysis = (id) => {
+    navigate(`/analysis?savedId=${id}`);
+  };
+
+  // =====================================================
+  // DATE FORMAT
+  // =====================================================
+
+  const formatDate = (date) => {
+    if (!date) {
+      return "Unknown date";
+    }
+
+    return new Date(date).toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  // =====================================================
   // RENDER
   // =====================================================
 
@@ -93,9 +273,7 @@ function Dashboard() {
 
       <aside className="dashboard-sidebar">
 
-        {/* =================================================
-            LOGO
-            ================================================= */}
+        {/* LOGO */}
 
         <div className="sidebar-logo">
 
@@ -104,7 +282,6 @@ function Dashboard() {
           </div>
 
           <div>
-
             <div className="logo-name">
               BizLens
             </div>
@@ -112,14 +289,11 @@ function Dashboard() {
             <div className="logo-ai">
               AI
             </div>
-
           </div>
 
         </div>
 
-        {/* =================================================
-            NAVIGATION
-            ================================================= */}
+        {/* NAVIGATION */}
 
         <nav className="sidebar-nav">
 
@@ -133,7 +307,6 @@ function Dashboard() {
             }
           >
             <span>📊</span>
-
             Dashboard
           </button>
 
@@ -145,7 +318,6 @@ function Dashboard() {
             onClick={handleNewAnalysis}
           >
             <span>📍</span>
-
             New Analysis
           </button>
 
@@ -154,18 +326,16 @@ function Dashboard() {
           <button
             className="sidebar-item"
             type="button"
-            
             onClick={() => {
-  if (!isLoggedIn) {
-    navigate("/login");
-    return;
-  }
+              if (!isLoggedIn) {
+                navigate("/login");
+                return;
+              }
 
-  navigate("/saved-analyses");
-}}
+              navigate("/saved-analyses");
+            }}
           >
             <span>📁</span>
-
             Saved Analyses
           </button>
 
@@ -175,7 +345,6 @@ function Dashboard() {
             className="sidebar-item"
             type="button"
             onClick={() => {
-
               if (!isLoggedIn) {
                 navigate("/login");
                 return;
@@ -184,19 +353,15 @@ function Dashboard() {
               alert(
                 "Business comparison will be added later."
               );
-
             }}
           >
             <span>⚖️</span>
-
             Compare Businesses
           </button>
 
         </nav>
 
-        {/* =================================================
-            SIDEBAR BOTTOM
-            ================================================= */}
+        {/* SIDEBAR BOTTOM */}
 
         <div className="sidebar-bottom">
 
@@ -206,7 +371,6 @@ function Dashboard() {
             className="sidebar-item"
             type="button"
             onClick={() => {
-
               if (!isLoggedIn) {
                 navigate("/login");
                 return;
@@ -215,17 +379,13 @@ function Dashboard() {
               alert(
                 "Settings will be added later."
               );
-
             }}
           >
             <span>⚙️</span>
-
             Settings
           </button>
 
-          {/* =================================================
-              LOGGED-IN USER → LOGOUT
-              ================================================= */}
+          {/* LOGOUT */}
 
           {isLoggedIn && (
             <button
@@ -234,7 +394,6 @@ function Dashboard() {
               onClick={handleLogout}
             >
               <span>↪</span>
-
               Logout
             </button>
           )}
@@ -261,46 +420,30 @@ function Dashboard() {
               AI-POWERED LOCATION INTELLIGENCE
             </p>
 
-            {/* =================================================
-                GREETING
-                ================================================= */}
-
             <h1>
-
               {isLoggedIn
                 ? `Good to see you, ${
                     user?.name || "there"
                   } 👋`
                 : "Welcome to BizLens-AI 👋"}
-
             </h1>
 
             <p className="dashboard-subtitle">
-
               Find the Right Location. Build the Right Business.
-
             </p>
 
           </div>
 
-          {/* =================================================
-              TOP RIGHT AUTH / USER
-              ================================================= */}
+          {/* AUTH / USER */}
 
           {isLoggedIn ? (
-
-            /* =================================================
-               LOGGED-IN USER
-               ================================================= */
 
             <div className="user-profile">
 
               <div className="user-avatar">
-
                 {(user?.name || "U")
                   .charAt(0)
                   .toUpperCase()}
-
               </div>
 
               <div className="user-details">
@@ -318,10 +461,6 @@ function Dashboard() {
             </div>
 
           ) : (
-
-            /* =================================================
-               LOGGED-OUT USER
-               ================================================= */
 
             <div className="auth-buttons">
 
@@ -350,97 +489,164 @@ function Dashboard() {
         {/* =================================================
             HERO
             ================================================= */}
+<section className="analysis-hero">
 
-        <section className="analysis-hero">
+  {/* HERO CONTENT */}
 
-          <div className="hero-content">
+  <div className="hero-content">
 
-            <div className="hero-badge">
-              ✨ AI-Powered Location Intelligence
-            </div>
+    <div className="hero-badge">
+      <span className="hero-badge-dot"></span>
+      AI-Powered Location Intelligence
+    </div>
 
-            <h2>
+    <h2>
+      Find the Right Location.
+      <br />
+      Build the Right Business.
+    </h2>
 
-              Validate a Business Idea Before You Invest
+    <p>
+      Make smarter business decisions using
+      location data, competition analysis,
+      demand insights and AI-powered predictions.
+    </p>
 
-              <br />
+    <div className="hero-actions">
 
+      <button
+        className="hero-button"
+        type="button"
+        onClick={handleNewAnalysis}
+      >
+        <span>
+          Start New Analysis
+        </span>
 
-            </h2>
+        <span className="hero-button-arrow">
+          →
+        </span>
+      </button>
 
-            <p>
+      <div className="hero-trust">
+        <span>✓</span>
+        42 business categories
+      </div>
 
-              Analyze competition, demand,
-              nearby businesses, accessibility
-              and location factors before
-              investing your money.
+    </div>
 
-            </p>
+  </div>
 
-            {/* =================================================
-                START ANALYSIS
-                ================================================= */}
+  {/* HERO VISUAL */}
 
-            <button
-              className="hero-button"
-              type="button"
-              onClick={handleNewAnalysis}
-            >
+  <div className="hero-visual">
 
-              Start New Analysis
+    <div className="hero-glow"></div>
 
-              <span>
-                →
-              </span>
+    <div className="hero-orbit hero-orbit-one"></div>
+    <div className="hero-orbit hero-orbit-two"></div>
 
-            </button>
+    <div className="map-orb">
 
-          </div>
+      <div className="map-grid">
 
-          {/* =================================================
-              HERO VISUAL
-              ================================================= */}
+        <span className="map-marker marker-one">
+          📍
+        </span>
 
-          <div className="hero-visual">
+        <span className="map-marker marker-two">
+          🏪
+        </span>
 
-            <div className="map-orb">
+        <span className="map-marker marker-three">
+          ☕
+        </span>
 
-              <div className="map-grid">
+        <span className="map-marker marker-four">
+          🏢
+        </span>
 
-                <span>📍</span>
+        <span className="map-marker marker-five">
+          🏥
+        </span>
 
-                <span>🏪</span>
+      </div>
 
-                <span>☕</span>
+      <div className="map-score">
 
-                <span>🏢</span>
+        <small>
+          LOCATION
+        </small>
 
-                <span>🏥</span>
+        <strong>
+          AI
+        </strong>
 
-              </div>
+        <span>
+          INTELLIGENCE
+        </span>
 
-              <div className="map-score">
+      </div>
 
-                <small>
-                  Potential
-                </small>
+    </div>
 
-                <strong>
-                  AI
-                </strong>
+    {/* FLOATING DATA CARDS */}
 
-                <small>
-                  Analysis
-                </small>
+    <div className="hero-floating-card hero-card-demand">
 
-              </div>
+      <span className="floating-icon">
+        📈
+      </span>
 
-            </div>
+      <div>
+        <small>
+          Demand
+        </small>
 
-          </div>
+        <strong>
+          Smart
+        </strong>
+      </div>
 
-        </section>
+    </div>
 
+    <div className="hero-floating-card hero-card-competition">
+
+      <span className="floating-icon">
+        🎯
+      </span>
+
+      <div>
+        <small>
+          Competition
+        </small>
+
+        <strong>
+          Analyzed
+        </strong>
+      </div>
+
+    </div>
+
+    <div className="hero-floating-card hero-card-ai">
+
+      <span className="ai-pulse"></span>
+
+      <div>
+        <small>
+          AI Engine
+        </small>
+
+        <strong>
+          Ready
+        </strong>
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
         {/* =================================================
             QUICK STATS
             ================================================= */}
@@ -482,7 +688,9 @@ function Dashboard() {
               </div>
 
               <strong className="stat-value">
-                0
+                {loadingAnalyses
+                  ? "..."
+                  : totalAnalyses}
               </strong>
 
               <span className="stat-description">
@@ -508,11 +716,13 @@ function Dashboard() {
               </div>
 
               <strong className="stat-value">
-                0
+                {loadingAnalyses
+                  ? "..."
+                  : uniqueLocations}
               </strong>
 
               <span className="stat-description">
-                Locations analyzed
+                Unique locations analyzed
               </span>
 
             </div>
@@ -534,45 +744,749 @@ function Dashboard() {
               </div>
 
               <strong className="stat-value">
-                42
+                {loadingAnalyses
+                  ? "..."
+                  : uniqueCategories}
               </strong>
 
               <span className="stat-description">
-                Business categories available
+                Business categories analyzed
               </span>
 
             </div>
 
-            {/* AI INSIGHTS */}
+            {/* AVERAGE OPPORTUNITY */}
 
             <div className="biz-stat-card">
 
               <div className="stat-top">
 
                 <div className="biz-icon-box biz-icon-purple">
-                  🤖
+                  🎯
                 </div>
 
                 <span className="stat-label">
-                  AI INSIGHTS
+                  AVG. OPPORTUNITY
                 </span>
 
               </div>
 
               <strong className="stat-value">
-                Ready
+                {loadingAnalyses
+                  ? "..."
+                  : `${averageOpportunity}/100`}
               </strong>
 
               <span className="stat-description">
-                AI recommendation engine
+                Average business opportunity score
               </span>
 
             </div>
 
           </div>
 
+          {analysisError && (
+            <div
+              style={{
+                marginTop: "16px",
+                padding: "12px 14px",
+                borderRadius: "8px",
+                background: "#fef2f2",
+                color: "#b91c1c",
+                border: "1px solid #fecaca",
+                fontSize: "14px",
+              }}
+            >
+              {analysisError}
+            </div>
+          )}
+
         </section>
 
+        {/* =================================================
+            RECENT ANALYSES
+            ================================================= */}
+
+        
+        {isLoggedIn && (
+  <section className="dashboard-section recent-analyses-section">
+
+    {/* SECTION HEADER */}
+
+    <div className="section-heading recent-section-heading">
+
+      <div>
+
+        <div className="section-mini-label">
+          YOUR ACTIVITY
+        </div>
+
+        <h2>
+          Recent Analyses
+        </h2>
+
+        <p>
+          Quickly revisit your latest business
+          location analyses.
+        </p>
+
+      </div>
+
+      {analyses.length > 0 && (
+        <button
+          type="button"
+          className="dashboard-link-button"
+          onClick={() =>
+            navigate("/saved-analyses")
+          }
+        >
+          View All
+          <span>→</span>
+        </button>
+      )}
+
+    </div>
+
+    {/* LOADING */}
+
+    {loadingAnalyses ? (
+
+      <div className="recent-empty">
+        Loading your recent analyses...
+      </div>
+
+    ) : recentAnalyses.length === 0 ? (
+
+      /* EMPTY STATE */
+
+      <div className="recent-empty recent-empty-premium">
+
+        <div className="recent-empty-icon">
+          📊
+        </div>
+
+        <h3>
+          No analyses yet
+        </h3>
+
+        <p>
+          Start your first location analysis
+          to see your results here.
+        </p>
+
+        <button
+          type="button"
+          className="hero-button"
+          onClick={handleNewAnalysis}
+        >
+          Start New Analysis
+          <span className="hero-button-arrow">
+            →
+          </span>
+        </button>
+
+      </div>
+
+    ) : (
+
+      /* ANALYSIS LIST */
+
+      <div className="recent-analysis-list">
+
+        {recentAnalyses.map((analysis) => {
+
+          const opportunity =
+            Number(analysis.successScore ?? 0);
+
+          const risk =
+            Number(analysis.riskScore ?? 0);
+
+          const opportunityLevel =
+            opportunity >= 70
+              ? "High Opportunity"
+              : opportunity >= 50
+              ? "Moderate Opportunity"
+              : "Lower Opportunity";
+
+          const opportunityClass =
+            opportunity >= 70
+              ? "high"
+              : opportunity >= 50
+              ? "moderate"
+              : "low";
+
+          const riskClass =
+            risk >= 60
+              ? "high"
+              : risk >= 30
+              ? "moderate"
+              : "low";
+
+          return (
+
+            <div
+              className="recent-analysis-card"
+              key={analysis._id}
+            >
+
+              {/* LEFT SIDE */}
+
+              <div className="recent-analysis-info">
+
+                <div className="recent-analysis-top">
+
+                  <div className="recent-category">
+
+                    <span className="recent-category-dot"></span>
+
+                    {analysis.category ||
+                      "Unknown Category"}
+
+                  </div>
+
+                  <span
+                    className={`recent-opportunity-badge ${opportunityClass}`}
+                  >
+                    {opportunityLevel}
+                  </span>
+
+                </div>
+
+                <div className="recent-location">
+                  <span>📍</span>
+
+                  {Number(
+                    analysis.latitude
+                  ).toFixed(5)}
+
+                  ,{" "}
+
+                  {Number(
+                    analysis.longitude
+                  ).toFixed(5)}
+
+                </div>
+
+                <div className="recent-date">
+                  {formatDate(
+                    analysis.createdAt
+                  )}
+                </div>
+
+              </div>
+
+              {/* OPPORTUNITY */}
+
+              <div className="recent-score-block">
+
+                <div className="recent-score-header">
+
+                  <span>
+                    Opportunity
+                  </span>
+
+                  <strong>
+                    {analysis.successScore ?? "—"}
+                    <small>/100</small>
+                  </strong>
+
+                </div>
+
+                <div className="recent-progress-track">
+
+                  <div
+                    className={`recent-progress-fill opportunity-${opportunityClass}`}
+                    style={{
+                      width: `${Math.min(
+                        Math.max(opportunity, 0),
+                        100
+                      )}%`,
+                    }}
+                  ></div>
+
+                </div>
+
+              </div>
+
+              {/* RISK */}
+
+              <div className="recent-score-block">
+
+                <div className="recent-score-header">
+
+                  <span>
+                    Risk
+                  </span>
+
+                  <strong>
+                    {analysis.riskScore ?? "—"}
+                    <small>/100</small>
+                  </strong>
+
+                </div>
+
+                <div className="recent-progress-track">
+
+                  <div
+                    className={`recent-progress-fill risk-${riskClass}`}
+                    style={{
+                      width: `${Math.min(
+                        Math.max(risk, 0),
+                        100
+                      )}%`,
+                    }}
+                  ></div>
+
+                </div>
+
+              </div>
+
+              {/* VIEW */}
+
+              <button
+                type="button"
+                className="recent-view-button"
+                onClick={() =>
+                  handleViewAnalysis(
+                    analysis._id
+                  )
+                }
+              >
+                <span>
+                  View Analysis
+                </span>
+
+                <strong>
+                  →
+                </strong>
+
+              </button>
+
+            </div>
+
+          );
+
+        })}
+
+      </div>
+
+    )}
+
+  </section>
+)}
+{/* =================================================
+    ANALYSIS INSIGHTS
+    ================================================= */}
+<section className="dashboard-section analysis-insights-section">
+
+  {/* =====================================================
+      SECTION HEADER
+      ===================================================== */}
+
+  <div className="section-heading insights-main-heading">
+
+    <div>
+
+      <div className="section-mini-label">
+        AI OVERVIEW
+      </div>
+
+      <h2>
+        Analysis Insights
+      </h2>
+
+      <p>
+        A quick overview of your location analysis history.
+      </p>
+
+    </div>
+
+  </div>
+
+
+  {/* =====================================================
+      INSIGHT SUMMARY
+      ===================================================== */}
+
+  <div className="insights-grid">
+
+    {/* HIGH OPPORTUNITY */}
+
+    <div className="insight-card insight-card-green">
+
+      <div className="insight-card-glow"></div>
+
+      <div className="insight-card-top">
+
+        <div className="insight-icon insight-icon-green">
+          🎯
+        </div>
+
+        <span className="insight-status">
+          70+
+        </span>
+
+      </div>
+
+      <div className="insight-content">
+
+        <span className="insight-label">
+          HIGH OPPORTUNITY
+        </span>
+
+        <strong>
+          {loadingAnalyses
+            ? "..."
+            : highOpportunityCount}
+        </strong>
+
+        <p>
+          Analyses scoring 70 or above
+        </p>
+
+      </div>
+
+    </div>
+
+
+    {/* MODERATE OPPORTUNITY */}
+
+    <div className="insight-card insight-card-orange">
+
+      <div className="insight-card-glow"></div>
+
+      <div className="insight-card-top">
+
+        <div className="insight-icon insight-icon-orange">
+          📊
+        </div>
+
+        <span className="insight-status">
+          50–69
+        </span>
+
+      </div>
+
+      <div className="insight-content">
+
+        <span className="insight-label">
+          MODERATE OPPORTUNITY
+        </span>
+
+        <strong>
+          {loadingAnalyses
+            ? "..."
+            : moderateOpportunityCount}
+        </strong>
+
+        <p>
+          Analyses scoring 50–69
+        </p>
+
+      </div>
+
+    </div>
+
+
+    {/* LOWER OPPORTUNITY */}
+
+    <div className="insight-card insight-card-red">
+
+      <div className="insight-card-glow"></div>
+
+      <div className="insight-card-top">
+
+        <div className="insight-icon insight-icon-red">
+          📉
+        </div>
+
+        <span className="insight-status">
+          &lt;50
+        </span>
+
+      </div>
+
+      <div className="insight-content">
+
+        <span className="insight-label">
+          LOWER OPPORTUNITY
+        </span>
+
+        <strong>
+          {loadingAnalyses
+            ? "..."
+            : lowerOpportunityCount}
+        </strong>
+
+        <p>
+          Analyses scoring below 50
+        </p>
+
+      </div>
+
+    </div>
+
+
+    {/* ML PREDICTIONS */}
+
+    <div className="insight-card insight-card-purple">
+
+      <div className="insight-card-glow"></div>
+
+      <div className="insight-card-top">
+
+        <div className="insight-icon insight-icon-purple">
+          🤖
+        </div>
+
+        <span className="insight-status">
+          AI
+        </span>
+
+      </div>
+
+      <div className="insight-content">
+
+        <span className="insight-label">
+          ML PREDICTIONS
+        </span>
+
+        <strong>
+          {loadingAnalyses
+            ? "..."
+            : `${mlPredictionCount}/${totalAnalyses}`}
+        </strong>
+
+        <p>
+          Analyses with ML prediction
+        </p>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  {/* =====================================================
+      RISK DISTRIBUTION
+      ===================================================== */}
+
+  <div className="risk-summary premium-insight-panel">
+
+    <div className="risk-summary-header">
+
+      <div>
+
+        <div className="panel-mini-label">
+          RISK OVERVIEW
+        </div>
+
+        <h3>
+          Risk Distribution
+        </h3>
+
+        <p>
+          Distribution of risk scores across your analyses.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <div className="risk-grid">
+
+      {/* LOW RISK */}
+
+      <div className="risk-item risk-item-green">
+
+        <span className="risk-dot risk-dot-green"></span>
+
+        <div>
+
+          <strong>
+            {loadingAnalyses
+              ? "..."
+              : lowRiskCount}
+          </strong>
+
+          <span>
+            Low Risk
+          </span>
+
+        </div>
+
+      </div>
+
+
+      {/* MEDIUM RISK */}
+
+      <div className="risk-item risk-item-orange">
+
+        <span className="risk-dot risk-dot-orange"></span>
+
+        <div>
+
+          <strong>
+            {loadingAnalyses
+              ? "..."
+              : mediumRiskCount}
+          </strong>
+
+          <span>
+            Medium Risk
+          </span>
+
+        </div>
+
+      </div>
+
+
+      {/* HIGH RISK */}
+
+      <div className="risk-item risk-item-red">
+
+        <span className="risk-dot risk-dot-red"></span>
+
+        <div>
+
+          <strong>
+            {loadingAnalyses
+              ? "..."
+              : highRiskCount}
+          </strong>
+
+          <span>
+            High Risk
+          </span>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  {/* =====================================================
+      CATEGORY DISTRIBUTION
+      ===================================================== */}
+
+  <div className="category-insights premium-insight-panel">
+
+    <div className="category-insights-header">
+
+      <div>
+
+        <div className="panel-mini-label">
+          BUSINESS ACTIVITY
+        </div>
+
+        <h3>
+          Most Analyzed Categories
+        </h3>
+
+        <p>
+          Business categories you have analyzed most often.
+        </p>
+
+      </div>
+
+      {!loadingAnalyses &&
+        categoryDistribution.length > 0 && (
+          <span className="category-total-badge">
+            {totalAnalyses} total analyses
+          </span>
+        )}
+
+    </div>
+
+
+    {loadingAnalyses ? (
+
+      <div className="category-loading">
+        Loading category data...
+      </div>
+
+    ) : categoryDistribution.length === 0 ? (
+
+      <div className="category-loading">
+        No category data available yet.
+      </div>
+
+    ) : (
+
+      <div className="category-list">
+
+        {categoryDistribution.map(
+          ([category, count], index) => {
+
+            const percentage =
+              totalAnalyses > 0
+                ? Math.round(
+                    (count / totalAnalyses) * 100
+                  )
+                : 0;
+
+            return (
+
+              <div
+                className="category-row"
+                key={category}
+              >
+
+                <div className="category-name">
+
+                  <span className="category-rank">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+
+                  <span>
+                    {category}
+                  </span>
+
+                </div>
+
+
+                <div className="category-bar-container">
+
+                  <div
+                    className="category-bar"
+                    style={{
+                      width: `${percentage}%`,
+                    }}
+                  ></div>
+
+                </div>
+
+
+                <div className="category-count">
+
+                  <strong>
+                    {count}
+                  </strong>
+
+                  <span>
+                    {percentage}%
+                  </span>
+
+                </div>
+
+              </div>
+
+            );
+          }
+        )}
+
+      </div>
+
+    )}
+
+  </div>
+
+</section>
         {/* =================================================
             HOW IT WORKS
             ================================================= */}

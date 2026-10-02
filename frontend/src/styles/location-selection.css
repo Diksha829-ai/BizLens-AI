@@ -1,21 +1,35 @@
-/* =================================================
+/* =========================================================
+   BIZLENS — LOCATION SELECTION
+   UI Enhancement
+   Functionality unchanged
+========================================================= */
+
+/* =========================================================
    GLOBAL
-================================================= */
+========================================================= */
 
 * {
   box-sizing: border-box;
 }
 
-
-/* =================================================
-   MAIN PAGE
-================================================= */
-
 .bizlens-page {
   min-height: 100vh;
   display: flex;
-  background: var(--bg-secondary);
+
+  background:
+    radial-gradient(
+      circle at 85% 5%,
+      rgba(49, 85, 237, 0.065),
+      transparent 27%
+    ),
+    linear-gradient(
+      180deg,
+      #f7f9fd 0%,
+      #f4f7fb 100%
+    );
+
   color: var(--text-primary);
+
   font-family:
     var(--font-family),
     Inter,
@@ -27,22 +41,25 @@
 }
 
 
-/* =================================================
+/* =========================================================
    SIDEBAR
-================================================= */
+========================================================= */
 
 .bizlens-sidebar {
   width: 270px;
   min-width: 270px;
 
-  background: var(--bg-primary);
+  min-height: 100vh;
 
-  border-right: 1px solid var(--border-light);
+  background: rgba(255, 255, 255, 0.92);
+
+  border-right: 1px solid #e7ebf2;
 
   display: flex;
   flex-direction: column;
 
-  min-height: 100vh;
+  position: relative;
+  z-index: 20;
 }
 
 .bizlens-logo {
@@ -55,20 +72,23 @@
 
   gap: 12px;
 
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid #e9edf3;
 }
 
 .bizlens-logo-box {
   width: 46px;
   height: 46px;
 
+  flex-shrink: 0;
+
   border-radius: 14px;
 
-  background: linear-gradient(
-    135deg,
-    var(--primary),
-    var(--primary-dark)
-  );
+  background:
+    linear-gradient(
+      135deg,
+      #315fed,
+      #2454d8
+    );
 
   color: white;
 
@@ -79,21 +99,28 @@
   font-size: 25px;
   font-weight: 800;
 
-  box-shadow: var(--shadow-md);
+  box-shadow:
+    0 8px 20px rgba(49, 95, 237, 0.22);
 }
 
 .bizlens-logo-title {
   font-size: 20px;
   font-weight: 800;
 
-  color: var(--text-primary);
+  color: #111827;
+
+  line-height: 1.1;
 }
 
 .bizlens-logo-ai {
+  display: block;
+
+  margin-top: 3px;
+
   font-size: 13px;
   font-weight: 700;
 
-  color: var(--primary);
+  color: #315fed;
 }
 
 .bizlens-nav {
@@ -103,7 +130,7 @@
 .bizlens-nav-item {
   width: 100%;
 
-  border: none;
+  border: 1px solid transparent;
 
   background: transparent;
 
@@ -111,7 +138,7 @@
 
   margin-bottom: 8px;
 
-  border-radius: var(--radius-md);
+  border-radius: 14px;
 
   display: flex;
   align-items: center;
@@ -120,38 +147,55 @@
 
   font-size: 15px;
 
-  color: var(--text-secondary);
+  color: #64748b;
 
   cursor: pointer;
 
   text-align: left;
 
   transition:
-    background var(--transition-fast),
-    color var(--transition-fast),
-    transform var(--transition-fast);
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .bizlens-nav-item:hover {
-  background: var(--primary-soft);
+  background: #f1f5ff;
 
-  color: var(--primary);
+  color: #315fed;
+
+  border-color: #e0e8ff;
 
   transform: translateX(2px);
 }
 
 .bizlens-nav-item.active {
-  background: var(--primary-soft);
+  background:
+    linear-gradient(
+      135deg,
+      #e7efff,
+      #dce9ff
+    );
 
-  color: var(--primary);
+  color: #2454d8;
+
+  border-color: transparent;
 
   font-weight: 700;
+
+  box-shadow:
+    0 4px 12px rgba(49, 95, 237, 0.06);
 }
 
 .bizlens-nav-icon {
   width: 22px;
 
+  flex-shrink: 0;
+
   text-align: center;
+
+  font-size: 17px;
 }
 
 .bizlens-sidebar-bottom {
@@ -159,27 +203,34 @@
 
   padding: 18px 16px 24px;
 
-  border-top: 1px solid var(--border-light);
+  border-top: 1px solid #e9edf3;
 }
 
 
-/* =================================================
-   CONTENT
-================================================= */
+/* =========================================================
+   MAIN CONTENT
+========================================================= */
 
 .bizlens-content {
   flex: 1;
 
   min-width: 0;
 
-  padding: 38px 42px 60px;
+  padding: 42px 42px 60px;
 }
 
 .bizlens-content-inner {
-  max-width: 1320px;
+  width: 100%;
+
+  max-width: 1360px;
 
   margin: 0 auto;
 }
+
+
+/* =========================================================
+   TOP HEADER
+========================================================= */
 
 .bizlens-topbar {
   display: flex;
@@ -193,21 +244,52 @@
 }
 
 .bizlens-eyebrow {
-  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
 
-  font-size: 14px;
+  gap: 8px;
+
+  padding: 7px 13px;
+
+  margin-bottom: 13px;
+
+  border-radius: 999px;
+
+  background: #eef3ff;
+
+  border: 1px solid #dce6ff;
+
+  color: #315fed;
+
+  font-size: 12px;
 
   font-weight: 800;
 
-  letter-spacing: 1.8px;
+  letter-spacing: 1.5px;
 
   text-transform: uppercase;
+}
 
-  margin-bottom: 10px;
+.bizlens-eyebrow::before {
+  content: "";
+
+  width: 7px;
+  height: 7px;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: #315fed;
+
+  box-shadow:
+    0 0 0 4px rgba(49, 95, 237, 0.10);
 }
 
 .bizlens-title {
   margin: 0;
+
+  color: #101827;
 
   font-size: 36px;
 
@@ -215,13 +297,15 @@
 
   font-weight: 800;
 
-  letter-spacing: -0.5px;
+  letter-spacing: -1px;
 }
 
 .bizlens-subtitle {
+  max-width: 680px;
+
   margin: 10px 0 0;
 
-  color: var(--text-secondary);
+  color: #64748b;
 
   font-size: 16px;
 
@@ -229,16 +313,12 @@
 }
 
 
-/* =================================================
-   USER
-================================================= */
+/* =========================================================
+   USER CARD
+========================================================= */
 
 .bizlens-user {
-  background: var(--bg-primary);
-
-  border: 1px solid var(--border-light);
-
-  border-radius: var(--radius-lg);
+  min-width: 175px;
 
   padding: 11px 17px 11px 11px;
 
@@ -247,18 +327,41 @@
 
   gap: 12px;
 
-  min-width: 170px;
+  background: rgba(255, 255, 255, 0.92);
 
-  box-shadow: var(--shadow-sm);
+  border: 1px solid #e5eaf2;
+
+  border-radius: 17px;
+
+  box-shadow:
+    0 8px 25px rgba(20, 33, 61, 0.055);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.bizlens-user:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 12px 30px rgba(20, 33, 61, 0.08);
 }
 
 .bizlens-avatar {
   width: 43px;
   height: 43px;
 
+  flex-shrink: 0;
+
   border-radius: 50%;
 
-  background: var(--primary);
+  background:
+    linear-gradient(
+      135deg,
+      #3166ed,
+      #2454d8
+    );
 
   color: white;
 
@@ -267,55 +370,89 @@
   justify-content: center;
 
   font-weight: 800;
+
+  box-shadow:
+    0 6px 15px rgba(49, 95, 237, 0.20);
 }
 
 .bizlens-user-name {
+  color: #172033;
+
   font-size: 14px;
 
   font-weight: 800;
-
-  color: var(--text-primary);
 }
 
 .bizlens-user-email {
-  font-size: 12px;
-
-  color: var(--text-muted);
-
   margin-top: 3px;
+
+  color: #94a3b8;
+
+  font-size: 12px;
 }
 
 
-/* =================================================
-   STEP
-================================================= */
+/* =========================================================
+   STEP PROGRESS
+========================================================= */
 
 .bizlens-step-card {
-  background: var(--bg-primary);
-
-  border: 1px solid var(--border-light);
-
-  border-radius: var(--radius-lg);
-
-  padding: 20px 24px;
+  position: relative;
 
   display: flex;
   align-items: center;
 
   gap: 18px;
 
+  padding: 20px 24px;
+
   margin-bottom: 24px;
 
-  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+
+  background: rgba(255, 255, 255, 0.92);
+
+  border: 1px solid #e5eaf2;
+
+  border-radius: 18px;
+
+  box-shadow:
+    0 8px 28px rgba(20, 33, 61, 0.045);
+}
+
+.bizlens-step-card::before {
+  content: "";
+
+  position: absolute;
+
+  left: 0;
+  top: 0;
+  bottom: 0;
+
+  width: 4px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #315fed,
+      #6954ef
+    );
 }
 
 .bizlens-step-number {
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
+
+  flex-shrink: 0;
 
   border-radius: 50%;
 
-  background: var(--primary);
+  background:
+    linear-gradient(
+      135deg,
+      #3166ed,
+      #2454d8
+    );
 
   color: white;
 
@@ -323,47 +460,58 @@
   align-items: center;
   justify-content: center;
 
+  font-size: 16px;
   font-weight: 800;
 
-  flex-shrink: 0;
+  box-shadow:
+    0 8px 18px rgba(49, 103, 233, 0.22);
 }
 
 .bizlens-step-info {
   flex: 1;
+
+  min-width: 0;
 }
 
 .bizlens-step-title {
+  margin-bottom: 9px;
+
+  color: #172033;
+
   font-size: 15px;
 
   font-weight: 800;
-
-  margin-bottom: 9px;
 }
 
 .bizlens-progress {
   height: 7px;
 
-  background: var(--bg-tertiary);
+  overflow: hidden;
+
+  background: #e9eef7;
 
   border-radius: 20px;
-
-  overflow: hidden;
 }
 
 .bizlens-progress-fill {
+  width: 33.33%;
   height: 100%;
 
-  width: 33.33%;
+  background:
+    linear-gradient(
+      90deg,
+      #315fed,
+      #6355ed
+    );
 
-  background: linear-gradient(
-    90deg,
-    var(--primary),
-    var(--primary-dark)
-  );
+  border-radius: inherit;
+
+  box-shadow:
+    0 0 10px rgba(49, 95, 237, 0.20);
 }
 
 .bizlens-step-count {
-  color: var(--primary);
+  color: #315fed;
 
   font-size: 13px;
 
@@ -373,26 +521,38 @@
 }
 
 
-/* =================================================
-   CARDS
-================================================= */
+/* =========================================================
+   GENERAL CARDS
+========================================================= */
 
 .bizlens-card,
 .bizlens-map-card,
 .bizlens-selected-card {
-  background: var(--bg-primary);
+  background: rgba(255, 255, 255, 0.94);
 
-  border: 1px solid var(--border-light);
+  border: 1px solid #e5eaf2;
 
-  border-radius: var(--radius-xl);
+  border-radius: 20px;
 
-  box-shadow: var(--shadow-sm);
+  box-shadow:
+    0 8px 28px rgba(20, 33, 61, 0.045);
 }
 
 .bizlens-card {
   padding: 26px;
 
   margin-bottom: 24px;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.bizlens-card:hover {
+  border-color: #d8e1ef;
+
+  box-shadow:
+    0 12px 34px rgba(20, 33, 61, 0.06);
 }
 
 .bizlens-section-heading {
@@ -408,37 +568,49 @@
   width: 46px;
   height: 46px;
 
-  border-radius: var(--radius-md);
-
-  background: var(--primary-soft);
+  flex-shrink: 0;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
+  border-radius: 13px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #edf3ff,
+      #e4edff
+    );
+
   font-size: 23px;
+
+  box-shadow:
+    0 5px 14px rgba(49, 85, 237, 0.07);
 }
 
 .bizlens-section-heading h2 {
   margin: 0;
 
+  color: #172033;
+
   font-size: 20px;
 
-  color: var(--text-primary);
+  letter-spacing: -0.3px;
 }
 
 .bizlens-section-heading p {
   margin: 4px 0 0;
 
-  color: var(--text-secondary);
+  color: #64748b;
 
   font-size: 14px;
 }
 
 
-/* =================================================
+/* =========================================================
    SEARCH
-================================================= */
+========================================================= */
 
 .bizlens-search-row {
   display: flex;
@@ -451,52 +623,55 @@
 
   min-width: 0;
 
-  height: 50px;
+  height: 52px;
 
-  border: 1px solid var(--border-medium);
-
-  border-radius: var(--radius-md);
-
-  padding: 0 16px;
+  padding: 0 17px;
 
   outline: none;
 
-  background: var(--bg-primary);
+  background: #fbfcfe;
 
-  color: var(--text-primary);
+  color: #172033;
+
+  border: 1px solid #dbe2ec;
+
+  border-radius: 13px;
 
   font-size: 15px;
 
   transition:
-    border-color var(--transition-fast),
-    box-shadow var(--transition-fast);
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .bizlens-search-input::placeholder {
-  color: var(--text-muted);
+  color: #94a3b8;
+}
+
+.bizlens-search-input:hover {
+  background: #ffffff;
+
+  border-color: #cbd5e1;
 }
 
 .bizlens-search-input:focus {
-  border-color: var(--primary);
+  background: #ffffff;
+
+  border-color: #315fed;
 
   box-shadow:
-    0 0 0 3px
-    rgba(
-      37,
-      99,
-      235,
-      0.10
-    );
+    0 0 0 4px rgba(49, 95, 237, 0.10);
 }
 
 .bizlens-button {
+  height: 52px;
+
+  padding: 0 27px;
+
   border: none;
 
-  border-radius: var(--radius-md);
-
-  padding: 0 25px;
-
-  height: 50px;
+  border-radius: 13px;
 
   font-size: 14px;
 
@@ -504,27 +679,41 @@
 
   cursor: pointer;
 
-  transition: var(--transition-fast);
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .bizlens-primary {
   color: white;
 
-  background: var(--primary);
+  background:
+    linear-gradient(
+      135deg,
+      #3166ed,
+      #2454d8
+    );
 
-  box-shadow: var(--shadow-sm);
+  box-shadow:
+    0 7px 18px rgba(49, 95, 237, 0.20);
 }
 
 .bizlens-primary:hover:not(:disabled) {
-  background: var(--primary-dark);
-
   transform: translateY(-1px);
+
+  box-shadow:
+    0 10px 22px rgba(49, 95, 237, 0.26);
+}
+
+.bizlens-primary:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .bizlens-primary:disabled {
-  background: var(--border-medium);
+  background: #d7dce5;
 
-  color: var(--text-muted);
+  color: #8b95a5;
 
   cursor: not-allowed;
 
@@ -532,31 +721,46 @@
 }
 
 .bizlens-current-location {
+  height: 43px;
+
   margin-top: 12px;
 
-  height: 42px;
+  padding: 0 17px;
 
-  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 
-  border: 1px solid var(--border-medium);
+  border: 1px solid #dbe3f1;
 
-  background: var(--bg-primary);
+  background: #ffffff;
 
-  color: var(--primary);
+  color: #315fed;
 
-  border-radius: var(--radius-md);
+  border-radius: 12px;
 
-  font-weight: 700;
+  font-size: 13px;
+
+  font-weight: 800;
 
   cursor: pointer;
 
-  transition: var(--transition-fast);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.bizlens-current-location:hover {
-  background: var(--primary-soft);
+.bizlens-current-location:hover:not(:disabled) {
+  background: #f2f5ff;
 
-  border-color: var(--primary-light);
+  border-color: #cbd8ff;
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 6px 15px rgba(49, 95, 237, 0.08);
 }
 
 .bizlens-current-location:disabled {
@@ -568,15 +772,15 @@
 .bizlens-error {
   margin-top: 12px;
 
-  color: var(--danger);
+  padding: 12px 14px;
 
-  background: var(--danger-light);
+  color: #b42318;
 
-  border: 1px solid rgba(220, 38, 38, 0.12);
+  background: #fff5f4;
 
-  border-radius: var(--radius-md);
+  border: 1px solid #f6d4d1;
 
-  padding: 11px 13px;
+  border-radius: 12px;
 
   font-size: 13px;
 
@@ -584,9 +788,9 @@
 }
 
 
-/* =================================================
+/* =========================================================
    LOCATION GRID
-================================================= */
+========================================================= */
 
 .bizlens-location-grid {
   display: grid;
@@ -601,62 +805,112 @@
 }
 
 
-/* =================================================
-   MAP
-================================================= */
+/* =========================================================
+   MAP CARD
+========================================================= */
 
 .bizlens-map-card {
-  padding: 20px;
+  padding: 0;
 
   overflow: hidden;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.bizlens-map-card:hover {
+  border-color: #d8e1ef;
+
+  box-shadow:
+    0 12px 34px rgba(20, 33, 61, 0.06);
 }
 
 .bizlens-map-heading {
   display: flex;
 
   justify-content: space-between;
-
   align-items: center;
 
   gap: 15px;
 
-  margin-bottom: 14px;
+  padding: 21px 24px 18px;
+
+  margin-bottom: 0;
+
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff,
+      #fbfcff
+    );
+
+  border-bottom: 1px solid #edf0f5;
 }
 
 .bizlens-map-title {
   display: flex;
 
-  align-items: flex-start;
+  align-items: center;
 
-  gap: 11px;
+  gap: 12px;
+
+  min-width: 0;
+}
+
+.bizlens-map-title > div:first-child {
+  width: 43px;
+  height: 43px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 13px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #edf3ff,
+      #e5edff
+    );
+
+  box-shadow:
+    0 5px 14px rgba(49, 85, 237, 0.08);
 }
 
 .bizlens-map-title h2 {
   margin: 0;
 
+  color: #172033;
+
   font-size: 19px;
 
-  color: var(--text-primary);
+  letter-spacing: -0.3px;
 }
 
 .bizlens-map-title p {
   margin: 4px 0 0;
 
-  color: var(--text-secondary);
+  color: #64748b;
 
   font-size: 13px;
 }
 
 .bizlens-map-link {
-  border: none;
+  flex-shrink: 0;
 
-  background: var(--primary-soft);
+  padding: 9px 14px;
 
-  color: var(--primary);
+  border: 1px solid #d9e3ff;
 
-  padding: 9px 13px;
+  background: #f3f6ff;
 
-  border-radius: 20px;
+  color: #315fed;
+
+  border-radius: 999px;
 
   font-size: 11px;
 
@@ -664,91 +918,168 @@
 
   cursor: pointer;
 
-  transition: var(--transition-fast);
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .bizlens-map-link:hover {
-  background: var(--primary-light);
+  background: #e9efff;
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 6px 16px rgba(49, 85, 237, 0.10);
 }
 
 .bizlens-map-wrapper {
   height: 560px;
 
-  border-radius: var(--radius-lg);
+  overflow: hidden;
+
+  border: none;
+
+  border-radius: 0 0 20px 20px;
+}
+
+.bizlens-map-wrapper .leaflet-container {
+  width: 100%;
+  height: 100%;
+}
+
+
+/* =========================================================
+   LEAFLET CONTROLS
+========================================================= */
+
+.bizlens-map-wrapper .leaflet-control-zoom {
+  border: none !important;
+
+  box-shadow:
+    0 5px 16px rgba(20, 33, 61, 0.14) !important;
 
   overflow: hidden;
 
-  border: 1px solid var(--border-light);
+  border-radius: 10px !important;
 }
 
-.bizlens-map-wrapper
-.leaflet-container {
-  height: 100%;
+.bizlens-map-wrapper .leaflet-control-zoom a {
+  width: 34px !important;
+  height: 34px !important;
 
-  width: 100%;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+
+  color: #334155 !important;
+
+  background: rgba(255, 255, 255, 0.96) !important;
+
+  border: none !important;
+
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.bizlens-map-wrapper .leaflet-control-zoom a:hover {
+  color: #315fed !important;
+
+  background: #f1f5ff !important;
+}
+
+.bizlens-map-wrapper .leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.88) !important;
+
+  padding: 3px 7px !important;
+
+  border-radius: 7px 0 0 0;
+
+  font-size: 10px !important;
 }
 
 
-/* =================================================
-   SELECTED LOCATION
-================================================= */
+/* =========================================================
+   SELECTED LOCATION CARD
+========================================================= */
 
 .bizlens-selected-card {
-  padding: 22px;
-
   position: sticky;
 
   top: 24px;
 
-  box-shadow: var(--shadow-sm);
+  padding: 22px;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.bizlens-selected-card:hover {
+  border-color: #d8e1ef;
+
+  box-shadow:
+    0 12px 34px rgba(20, 33, 61, 0.06);
 }
 
 .bizlens-selected-card h2 {
   margin: 0 0 18px;
 
+  color: #172033;
+
   font-size: 20px;
 
-  color: var(--text-primary);
+  letter-spacing: -0.4px;
 }
 
 .bizlens-selected-preview {
-  background: var(--bg-tertiary);
+  min-height: 105px;
 
-  border-radius: var(--radius-lg);
-
-  padding: 18px;
+  padding: 16px;
 
   margin-bottom: 18px;
 
-  min-height: 105px;
+  background:
+    linear-gradient(
+      135deg,
+      #f7f9ff,
+      #eef3ff
+    );
+
+  border: 1px solid #e1e8fb;
+
+  border-radius: 14px;
 }
 
 .bizlens-selected-icon {
-  font-size: 23px;
-
   margin-bottom: 8px;
+
+  font-size: 23px;
 }
 
 .bizlens-selected-name {
-  color: var(--text-secondary);
+  color: #273653;
 
   font-size: 14px;
 
-  line-height: 1.5;
-
   font-weight: 700;
+
+  line-height: 1.55;
 }
 
 .bizlens-no-location {
-  color: var(--text-muted);
-
-  font-weight: 700;
+  color: #94a3b8;
 
   font-size: 14px;
+
+  font-weight: 700;
 }
 
 .bizlens-label {
-  color: var(--text-muted);
+  margin-bottom: 7px;
+
+  color: #94a3b8;
 
   font-size: 11px;
 
@@ -757,22 +1088,32 @@
   letter-spacing: 1px;
 
   text-transform: uppercase;
-
-  margin-bottom: 7px;
 }
 
 .bizlens-coordinates {
+  margin-bottom: 17px;
+
+  padding: 12px 15px;
+
+  color: #172033;
+
+  background: #f8fafc;
+
+  border: 1px solid #e8edf4;
+
+  border-radius: 12px;
+
   font-size: 14px;
 
   line-height: 1.8;
+}
 
-  margin-bottom: 17px;
-
-  color: var(--text-primary);
+.bizlens-coordinates > div {
+  padding: 3px 0;
 }
 
 .bizlens-accuracy {
-  color: var(--text-muted);
+  color: #64748b;
 
   font-size: 12px;
 }
@@ -780,54 +1121,71 @@
 .bizlens-status {
   padding: 12px 13px;
 
-  border-radius: var(--radius-md);
+  margin-bottom: 18px;
+
+  border-radius: 12px;
 
   font-size: 13px;
 
-  margin-bottom: 18px;
+  font-weight: 700;
 
   line-height: 1.5;
 }
 
 .bizlens-status-selected {
-  background: var(--success-light);
+  color: #16803c;
 
-  color: var(--success);
+  background: #effcf4;
+
+  border: 1px solid #ccefdc;
 }
 
 .bizlens-status-empty {
-  background: var(--warning-light);
+  color: #9a6700;
 
-  color: var(--warning);
+  background: #fffaf0;
+
+  border: 1px solid #f4e4bd;
 }
 
 
-/* =================================================
+/* =========================================================
    RADIUS
-================================================= */
+========================================================= */
 
 .bizlens-radius {
-  border-top: 1px solid var(--border-light);
-
-  padding-top: 18px;
+  padding-top: 19px;
 
   margin-top: 18px;
+
+  border-top: 1px solid #edf0f5;
 }
 
 .bizlens-radius-title {
   display: flex;
 
   justify-content: space-between;
+  align-items: center;
 
   margin-bottom: 12px;
 }
 
 .bizlens-radius-title strong {
-  color: var(--text-primary);
+  color: #172033;
+
+  font-size: 14px;
 }
 
 .bizlens-radius-value {
-  color: var(--primary);
+  padding: 5px 10px;
+
+  color: #315fed;
+
+  background: #eef3ff;
+
+  border-radius: 999px;
+
+  font-size: 12px;
 
   font-weight: 800;
 }
@@ -842,52 +1200,64 @@
 }
 
 .bizlens-radius-option {
-  height: 40px;
+  height: 41px;
 
-  border: 1px solid var(--border-medium);
+  border: 1px solid #dbe2ec;
 
-  background: var(--bg-primary);
+  background: #ffffff;
 
-  color: var(--text-secondary);
+  color: #64748b;
 
-  border-radius: var(--radius-sm);
+  border-radius: 10px;
+
+  font-size: 13px;
 
   font-weight: 700;
 
   cursor: pointer;
 
-  transition: var(--transition-fast);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .bizlens-radius-option:hover {
-  border-color: var(--primary-light);
+  transform: translateY(-1px);
 
-  color: var(--primary);
+  border-color: #bfcdf8;
 
-  background: var(--primary-soft);
+  background: #f4f7ff;
+
+  color: #315fed;
 }
 
 .bizlens-radius-option.active {
-  border-color: var(--primary);
+  color: #2454d8;
 
-  background: var(--primary-soft);
+  background: #edf3ff;
 
-  color: var(--primary);
+  border-color: #315fed;
+
+  box-shadow:
+    0 5px 14px rgba(49, 85, 237, 0.13);
 }
 
 
-/* =================================================
+/* =========================================================
    TIP
-================================================= */
+========================================================= */
 
 .bizlens-tip {
-  margin-top: 18px;
-
   padding-top: 18px;
 
-  border-top: 1px solid var(--border-light);
+  margin-top: 18px;
 
-  color: var(--text-secondary);
+  border-top: 1px solid #edf0f5;
+
+  color: #64748b;
 
   font-size: 12px;
 
@@ -895,54 +1265,67 @@
 }
 
 
-/* =================================================
+/* =========================================================
    ACTIONS
-================================================= */
+========================================================= */
 
 .bizlens-action-group {
-  margin-top: 20px;
-
   display: flex;
 
   flex-direction: column;
 
   gap: 10px;
+
+  margin-top: 20px;
 }
 
 .bizlens-clear-button {
   height: 46px;
 
-  border: 1px solid var(--border-medium);
+  border: 1px solid #dbe2ec;
 
-  background: var(--bg-primary);
+  background: #ffffff;
 
-  color: var(--text-secondary);
+  color: #64748b;
 
-  border-radius: var(--radius-md);
+  border-radius: 12px;
+
+  font-size: 13px;
 
   font-weight: 700;
 
   cursor: pointer;
 
-  transition: var(--transition-fast);
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .bizlens-clear-button:hover {
-  background: var(--bg-tertiary);
+  background: #f8fafc;
 
-  color: var(--text-primary);
+  color: #334155;
 
-  border-color: var(--text-secondary);
+  border-color: #cbd5e1;
+
+  transform: translateY(-1px);
 }
 
 .bizlens-continue-button {
-  height: 50px;
+  height: 51px;
 
   border: none;
 
-  border-radius: var(--radius-md);
+  border-radius: 13px;
 
-  background: var(--primary);
+  background:
+    linear-gradient(
+      135deg,
+      #3166ed,
+      #2454d8
+    );
 
   color: white;
 
@@ -952,23 +1335,37 @@
 
   cursor: pointer;
 
-  box-shadow: var(--shadow-md);
+  box-shadow:
+    0 8px 20px rgba(49, 95, 237, 0.22);
 
-  transition: var(--transition-fast);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
 .bizlens-continue-button:hover:not(:disabled) {
-  background: var(--primary-dark);
+  transform: translateY(-2px);
 
-  transform: translateY(-1px);
+  background:
+    linear-gradient(
+      135deg,
+      #285be4,
+      #1f4dcc
+    );
 
-  box-shadow: var(--shadow-lg);
+  box-shadow:
+    0 12px 25px rgba(49, 95, 237, 0.28);
+}
+
+.bizlens-continue-button:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .bizlens-continue-button:disabled {
-  background: var(--border-medium);
+  background: #d7dce5;
 
-  color: var(--text-muted);
+  color: #8b95a5;
 
   cursor: not-allowed;
 
@@ -976,55 +1373,48 @@
 }
 
 
-/* =================================================
+/* =========================================================
    CUSTOM MARKER
-================================================= */
+========================================================= */
 
 .bizlens-marker-wrapper {
   width: 42px;
-
   height: 42px;
 
   display: flex;
 
   align-items: flex-start;
-
   justify-content: center;
+
+  filter:
+    drop-shadow(
+      0 5px 8px rgba(20, 33, 61, 0.22)
+    );
 }
 
 .bizlens-marker-pin {
   width: 32px;
-
   height: 32px;
 
-  border-radius:
-    50% 50% 50% 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   background: #ec3d72;
 
   border: 3px solid white;
 
+  border-radius:
+    50% 50% 50% 0;
+
   transform: rotate(-45deg);
 
   box-shadow:
-    0 3px 10px
-    rgba(
-      0,
-      0,
-      0,
-      0.30
-    );
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: center;
+    0 3px 10px rgba(0, 0, 0, 0.30);
 }
 
 .bizlens-marker-dot {
   width: 9px;
-
   height: 9px;
 
   border-radius: 50%;
@@ -1033,15 +1423,26 @@
 }
 
 
-/* =================================================
-   RESPONSIVE — TABLET
-================================================= */
+/* =========================================================
+   FOCUS ACCESSIBILITY
+========================================================= */
+
+.bizlens-page button:focus-visible,
+.bizlens-page input:focus-visible {
+  outline: 3px solid rgba(49, 85, 237, 0.18);
+
+  outline-offset: 2px;
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
 
 @media (max-width: 1100px) {
 
   .bizlens-sidebar {
     width: 230px;
-
     min-width: 230px;
   }
 
@@ -1062,9 +1463,9 @@
 }
 
 
-/* =================================================
-   RESPONSIVE — SMALL TABLET
-================================================= */
+/* =========================================================
+   SMALL TABLET
+========================================================= */
 
 @media (max-width: 900px) {
 
@@ -1076,7 +1477,6 @@
     width: 100%;
 
     min-width: 0;
-
     min-height: auto;
   }
 
@@ -1104,6 +1504,14 @@
     display: none;
   }
 
+  .bizlens-content {
+    padding-top: 28px;
+  }
+
+  .bizlens-topbar {
+    margin-bottom: 22px;
+  }
+
   .bizlens-location-grid {
     grid-template-columns: 1fr;
   }
@@ -1114,9 +1522,9 @@
 }
 
 
-/* =================================================
-   RESPONSIVE — MOBILE
-================================================= */
+/* =========================================================
+   MOBILE
+========================================================= */
 
 @media (max-width: 650px) {
 
@@ -1149,8 +1557,7 @@
     flex-direction: column;
   }
 
-  .bizlens-search-row
-  .bizlens-button {
+  .bizlens-search-row .bizlens-button {
     width: 100%;
   }
 
@@ -1158,8 +1565,12 @@
     padding: 18px;
   }
 
+  .bizlens-map-heading {
+    padding: 18px;
+  }
+
   .bizlens-map-card {
-    padding: 14px;
+    padding: 0;
   }
 
   .bizlens-map-wrapper {
@@ -1181,9 +1592,9 @@
 }
 
 
-/* =================================================
-   RESPONSIVE — SMALL MOBILE
-================================================= */
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
 
 @media (max-width: 420px) {
 
@@ -1207,7 +1618,6 @@
 
   .bizlens-logo-box {
     width: 40px;
-
     height: 40px;
 
     font-size: 21px;
@@ -1223,7 +1633,6 @@
 
   .bizlens-step-number {
     width: 36px;
-
     height: 36px;
   }
 
@@ -1236,6 +1645,404 @@
   }
 
   .bizlens-radius-options {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns:
+      1fr 1fr;
+  }
+}
+
+/* =========================================================
+   LOCATION PAGE — VISIBLE PREMIUM UI UPGRADE
+   Visual only
+========================================================= */
+
+/* PAGE */
+.bizlens-content {
+  padding-top: 46px;
+}
+
+.bizlens-content-inner {
+  max-width: 1380px;
+}
+
+/* HEADER */
+.bizlens-title {
+  font-size: 40px;
+  font-weight: 850;
+  letter-spacing: -1.4px;
+}
+
+.bizlens-subtitle {
+  font-size: 16px;
+  color: #667085;
+}
+
+/* STEP CARD */
+.bizlens-step-card {
+  min-height: 88px;
+  padding: 20px 26px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8faff 100%);
+  border: 1px solid #dfe6f2;
+  box-shadow: 0 12px 35px rgba(30, 55, 100, 0.07);
+}
+
+.bizlens-step-number {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.28);
+}
+
+.bizlens-progress {
+  height: 8px;
+  background: #e8edf6;
+}
+
+.bizlens-progress-fill {
+  background: linear-gradient(90deg, #2563eb, #6366f1);
+}
+
+/* SEARCH CARD */
+.bizlens-card {
+  padding: 30px;
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(37, 99, 235, 0.08),
+      transparent 32%
+    ),
+    #ffffff;
+  border: 1px solid #dfe6f2;
+  box-shadow: 0 14px 40px rgba(30, 55, 100, 0.075);
+}
+
+.bizlens-section-heading {
+  margin-bottom: 22px;
+}
+
+.bizlens-section-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #e8f0ff, #dce8ff);
+  border: 1px solid #d4e1ff;
+  font-size: 25px;
+}
+
+.bizlens-section-heading h2 {
+  font-size: 21px;
+  letter-spacing: -0.4px;
+}
+
+.bizlens-section-heading p {
+  color: #718096;
+}
+
+/* SEARCH INPUT */
+.bizlens-search-row {
+  gap: 12px;
+}
+
+.bizlens-search-input {
+  height: 56px;
+  padding: 0 20px;
+  border: 1px solid #d5deeb;
+  border-radius: 14px;
+  background: #f9fbfe;
+  font-size: 15px;
+  box-shadow: inset 0 1px 2px rgba(20, 30, 50, 0.02);
+}
+
+.bizlens-search-input:focus {
+  background: #ffffff;
+  border-color: #2563eb;
+  box-shadow:
+    0 0 0 4px rgba(37, 99, 235, 0.10),
+    0 5px 18px rgba(37, 99, 235, 0.06);
+}
+
+/* SEARCH BUTTON */
+.bizlens-button.bizlens-primary {
+  height: 56px;
+  min-width: 110px;
+  padding: 0 28px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.23);
+}
+
+.bizlens-button.bizlens-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(37, 99, 235, 0.30);
+}
+
+/* CURRENT LOCATION */
+.bizlens-current-location {
+  height: 46px;
+  margin-top: 15px;
+  padding: 0 18px;
+  border: 1px solid #cbd9f7;
+  border-radius: 13px;
+  background: #f5f8ff;
+  color: #2454d8;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.05);
+}
+
+.bizlens-current-location:hover:not(:disabled) {
+  background: #eaf0ff;
+  border-color: #9fb8f7;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.10);
+}
+
+/* MAP CARD */
+.bizlens-map-card {
+  background: #ffffff;
+  border: 1px solid #dfe6f2;
+  border-radius: 22px;
+  box-shadow: 0 14px 40px rgba(30, 55, 100, 0.075);
+}
+
+.bizlens-map-heading {
+  min-height: 82px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #ffffff, #f7f9fd);
+}
+
+.bizlens-map-title h2 {
+  font-size: 20px;
+}
+
+.bizlens-map-title p {
+  color: #718096;
+}
+
+.bizlens-map-title > div:first-child {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #e9f0ff, #dce8ff);
+  border: 1px solid #d4e1ff;
+}
+
+.bizlens-map-link {
+  padding: 10px 16px;
+  border: 1px solid #cbd9f7;
+  background: #f1f5ff;
+  color: #2454d8;
+  font-size: 11px;
+}
+
+.bizlens-map-link:hover {
+  background: #e3ebff;
+}
+
+/* MAP */
+.bizlens-map-wrapper {
+  height: 570px;
+  border-top: 1px solid #e8edf5;
+  border-radius: 0 0 22px 22px;
+}
+
+.bizlens-map-wrapper .leaflet-container {
+  filter: saturate(0.96) contrast(0.98);
+}
+
+/* SELECTED LOCATION PANEL */
+.bizlens-selected-card {
+  padding: 0;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #dfe6f2;
+  border-radius: 22px;
+  box-shadow: 0 14px 40px rgba(30, 55, 100, 0.075);
+}
+
+.bizlens-selected-card h2 {
+  margin: 0;
+  padding: 22px 22px 18px;
+  border-bottom: 1px solid #edf1f6;
+  background: linear-gradient(135deg, #ffffff, #f8faff);
+  font-size: 21px;
+}
+
+.bizlens-selected-card > *:not(h2) {
+  margin-left: 22px;
+  margin-right: 22px;
+}
+
+.bizlens-selected-preview {
+  margin-top: 20px;
+  padding: 18px;
+  background: linear-gradient(135deg, #f0f5ff, #eaf0ff);
+  border: 1px solid #d5e2ff;
+  border-radius: 15px;
+  box-shadow: 0 5px 16px rgba(37, 99, 235, 0.06);
+}
+
+.bizlens-selected-icon {
+  display: inline-flex;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  border-radius: 11px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(30, 55, 100, 0.08);
+}
+
+.bizlens-selected-name {
+  color: #1f2d46;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+/* COORDINATES */
+.bizlens-coordinates {
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid #e5eaf1;
+  border-radius: 14px;
+}
+
+.bizlens-coordinates > div {
+  padding: 7px 0;
+}
+
+.bizlens-coordinates > div + div {
+  border-top: 1px solid #e9edf3;
+}
+
+/* STATUS */
+.bizlens-status {
+  padding: 13px 14px;
+  border-radius: 13px;
+  font-weight: 700;
+}
+
+.bizlens-status-selected {
+  background: linear-gradient(135deg, #effcf4, #eaf9f0);
+  border: 1px solid #c9edd8;
+  color: #16803c;
+}
+
+/* RADIUS */
+.bizlens-radius {
+  padding-top: 21px;
+}
+
+.bizlens-radius-title {
+  margin-bottom: 14px;
+}
+
+.bizlens-radius-title strong {
+  font-size: 14px;
+}
+
+.bizlens-radius-value {
+  padding: 6px 11px;
+  background: #e9f0ff;
+  border: 1px solid #d2dfff;
+  color: #2454d8;
+}
+
+.bizlens-radius-options {
+  gap: 8px;
+}
+
+.bizlens-radius-option {
+  height: 44px;
+  border-radius: 11px;
+  background: #ffffff;
+  border: 1px solid #d7dfeb;
+  font-size: 13px;
+}
+
+.bizlens-radius-option:hover {
+  background: #f3f6ff;
+  border-color: #aebff0;
+}
+
+.bizlens-radius-option.active {
+  background: linear-gradient(135deg, #eaf1ff, #e1ebff);
+  border: 2px solid #2563eb;
+  color: #1d4ed8;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.14);
+}
+
+/* TIP */
+.bizlens-tip {
+  padding: 16px 0 0;
+  color: #68778d;
+}
+
+/* ACTIONS */
+.bizlens-action-group {
+  padding-bottom: 22px;
+}
+
+.bizlens-clear-button {
+  height: 47px;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.bizlens-continue-button {
+  height: 54px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  box-shadow: 0 9px 22px rgba(37, 99, 235, 0.24);
+  font-size: 14px;
+}
+
+.bizlens-continue-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 13px 28px rgba(37, 99, 235, 0.30);
+}
+
+/* MARKER */
+.bizlens-marker-pin {
+  background: #f03f78;
+  box-shadow:
+    0 4px 12px rgba(240, 63, 120, 0.35),
+    0 2px 5px rgba(0, 0, 0, 0.20);
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 900px) {
+  .bizlens-title {
+    font-size: 34px;
+  }
+
+  .bizlens-map-wrapper {
+    height: 520px;
+  }
+}
+
+@media (max-width: 650px) {
+  .bizlens-title {
+    font-size: 29px;
+  }
+
+  .bizlens-card {
+    padding: 22px;
+  }
+
+  .bizlens-map-wrapper {
+    height: 430px;
+  }
+
+  .bizlens-selected-card > *:not(h2) {
+    margin-left: 18px;
+    margin-right: 18px;
+  }
+
+  .bizlens-selected-card h2 {
+    padding-left: 18px;
+    padding-right: 18px;
   }
 }
