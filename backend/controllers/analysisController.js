@@ -2337,24 +2337,18 @@ const analyzeLocation = async (req, res) => {
 
     const scoring =
       await calculateBusinessAnalysis({
-        category:
-          normalizedCategory,
+  category: normalizedCategory,
 
-        competition,
+  competition,
 
-        demand,
+  demand,
 
-        categoryDemandScore,
+  totalPlaces: places.length,
 
-        totalPlaces:
-          places.length,
+  accessibility,
 
-        accessibility,
-
-        dataCoverage:
-          coverage.score,
-      });
-
+  dataCoverage: coverage.score,
+});
     // --------------------------------------------------------
     // SAVE ANALYSIS
     // --------------------------------------------------------

@@ -339,59 +339,15 @@ function calculateDemandScore(
 // ============================================================
 // CATEGORY-SPECIFIC DEMAND SCORE
 // ============================================================
-
 function calculateCategoryDemandScore(
   demand = {},
   category = "gym"
 ) {
-
-  const weights =
-    getCategoryWeights(category);
-
-  let weightedScore = 0;
-
-  let maximumScore = 0;
-
-  Object.entries(
-    weights
-  ).forEach(
-    ([key, weight]) => {
-
-      const count =
-        nonNegative(
-          demand[key],
-          0
-        );
-
-      const effectiveCount =
-        Math.min(
-          Math.log1p(count) * 2,
-          10
-        );
-
-      weightedScore +=
-        effectiveCount *
-        weight;
-
-      maximumScore +=
-        10 * weight;
-    }
-  );
-
-  if (
-    maximumScore <= 0
-  ) {
-    return 0;
-  }
-
-  return clampScore(
-    (
-      weightedScore /
-      maximumScore
-    ) * 100
+  return calculateDemandScore(
+    demand,
+    category
   );
 }
-
 
 // ============================================================
 // FOOT TRAFFIC SCORE
@@ -1503,24 +1459,89 @@ function calculateRiskScore({
 // Total                = 100%
 //
 // ============================================================
-
 function calculateBusinessSuccessScore({
-
   demandScore = 0,
-
   competitionScore = 0,
-
   accessibilityScore = 0,
-
   locationAttractiveness = 0,
-
-  footTrafficScore = 50,
-
-  demographicScore = 50,
-
+  footTrafficScore = null,
+  demographicScore = null,
   riskScore = 50,
-
 }) {
+  const factors = [
+    {
+      score: demandScore,
+      weight: 0.25,
+    },
+    {
+      score: competitionScore,
+      weight: 0.22,
+    },
+    {
+      score: accessibilityScore,
+      weight: 0.13,
+    },
+    {
+      score: locationAttractiveness,
+      weight: 0.13,
+    },
+    {
+      score: footTrafficScore,
+      weight: 0.10,
+    },
+    {
+      score: demographicScore,
+      weight: 0.07,
+    },
+    {
+      score: 100 - clampScore(riskScore),
+      weight: 0.10,
+    },
+  ];
+
+  const availableFactors =
+    factors.filter(
+      ({ score }) =>
+        score !== null &&
+        score !== undefined &&
+        Number.isFinite(
+          Number(score)
+        )
+    );
+
+  const totalAvailableWeight =
+    availableFactors.reduce(
+      (total, factor) =>
+        total + factor.weight,
+      0
+    );
+
+  if (
+    totalAvailableWeight <= 0
+  ) {
+    return {
+      successScore: 0,
+      riskSafetyScore:
+        clampScore(
+          100 - clampScore(riskScore)
+        ),
+    };
+  }
+
+  const weightedScore =
+    availableFactors.reduce(
+      (total, factor) =>
+        total +
+        safeNumber(
+          factor.score,
+          0
+        ) *
+        (
+          factor.weight /
+          totalAvailableWeight
+        ),
+      0
+    );
 
   const riskSafetyScore =
     100 -
@@ -1528,58 +1549,18 @@ function calculateBusinessSuccessScore({
       riskScore
     );
 
-
-  const successScore =
-
-    safeNumber(
-      demandScore,
-      0
-    ) * 0.25 +
-
-    safeNumber(
-      competitionScore,
-      0
-    ) * 0.22 +
-
-    safeNumber(
-      accessibilityScore,
-      0
-    ) * 0.13 +
-
-    safeNumber(
-      locationAttractiveness,
-      0
-    ) * 0.13 +
-
-    safeNumber(
-      footTrafficScore,
-      50
-    ) * 0.10 +
-
-    safeNumber(
-      demographicScore,
-      50
-    ) * 0.07 +
-
-    riskSafetyScore * 0.10;
-
-
   return {
-
     successScore:
       clampScore(
-        successScore
+        weightedScore
       ),
 
     riskSafetyScore:
       clampScore(
         riskSafetyScore
       ),
-
   };
 }
-
-
 // ============================================================
 // SUCCESS LEVEL
 // ============================================================
@@ -2094,9 +2075,14 @@ function generateRecommendations({
   }
 
 
-  // ==========================================================
-  // FOOT TRAFFIC
-  // ==========================================================
+// ==========================================================
+// FOOT TRAFFIC
+// ==========================================================
+
+if (
+  footTrafficScore !== null &&
+  footTrafficScore !== undefined
+) {
 
   if (
     footTrafficScore >= 75
@@ -2114,19 +2100,28 @@ function generateRecommendations({
       "Foot-traffic indicators are moderate. Validate peak-hour pedestrian activity before finalizing the location."
     );
 
-  } else if (
-    footTrafficScore < 50
-  ) {
+  } else {
 
     recommendations.push(
       "Foot-traffic indicators are relatively weak. Consider a location with stronger pedestrian or customer movement."
     );
   }
 
+} else {
+
+  recommendations.push(
+    "Foot-traffic data is not available in the current analysis. Validate peak-hour pedestrian activity before finalizing the location."
+  );
+}
 
   // ==========================================================
-  // DEMOGRAPHICS
-  // ==========================================================
+// DEMOGRAPHICS
+// ==========================================================
+
+if (
+  demographicScore !== null &&
+  demographicScore !== undefined
+) {
 
   if (
     demographicScore >= 75
@@ -2145,7 +2140,12 @@ function generateRecommendations({
     );
   }
 
+} else {
 
+  recommendations.push(
+    "Demographic data is not available in the current analysis. Additional population and income data would improve the analysis."
+  );
+}
   // ==========================================================
   // ACCESSIBILITY
   // ==========================================================
@@ -2394,21 +2394,26 @@ function calculateBusinessAnalysis({
   // FOOT TRAFFIC
   // ==========================================================
 
-  const footTrafficScore =
-    calculateFootTrafficScore(
-      footTraffic
-    );
+ const footTrafficScore =
+  footTraffic &&
+  Object.keys(footTraffic).length > 0
+    ? calculateFootTrafficScore(
+        footTraffic
+      )
+    : null;
 
 
   // ==========================================================
   // DEMOGRAPHICS
   // ==========================================================
 
-  const demographicScore =
-    calculateDemographicScore(
-      demographics
-    );
-
+const demographicScore =
+  demographics &&
+  Object.keys(demographics).length > 0
+    ? calculateDemographicScore(
+        demographics
+      )
+    : null;
 
   // ==========================================================
   // RISK
