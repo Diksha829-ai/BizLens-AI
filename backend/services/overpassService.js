@@ -1365,32 +1365,31 @@ async function requestOverpass(endpoint, query, timeoutMs) {
 
 async function fetchOverpassData(query) {
   let lastError = null;
+  const deadline = Date.now() + OVERPASS_TOTAL_TIMEOUT;
 
-  const deadline =
-    Date.now() + OVERPASS_TOTAL_TIMEOUT;
+  // Try each configured Overpass server in order.
+  for (let endpointIndex = 0; endpointIndex < OVERPASS_ENDPOINTS.length; endpointIndex++) {
+    const endpoint = OVERPASS_ENDPOINTS[endpointIndex];
 
-  for (const endpoint of OVERPASS_ENDPOINTS) {
-    for (
-      let attempt = 1;
-      attempt <= MAX_RETRIES_PER_ENDPOINT;
-      attempt++
-    ) {
+    // Allow up to two attempts per server, subject to the total deadline.
+    for (let attempt = 1; attempt <= 2; attempt++) {
       const remainingMs = deadline - Date.now();
 
       if (remainingMs <= 0) {
-        throw new Error(
+        logWarn("Overpass total time limit reached.");
+        throw lastError || new Error(
           "Overpass request exceeded the total time limit."
         );
       }
 
-      const timeoutMs = Math.min(
-        REQUEST_TIMEOUT,
-        remainingMs
+      const timeoutMs = Math.max(
+        1000,
+        Math.min(REQUEST_TIMEOUT, remainingMs)
       );
 
       try {
         logInfo(
-          `Requesting ${endpoint} - attempt ${attempt}/${MAX_RETRIES_PER_ENDPOINT}`
+          `Requesting ${endpoint} - attempt ${attempt}/2`
         );
 
         const elements = await requestOverpass(
@@ -1412,28 +1411,41 @@ async function fetchOverpassData(query) {
         lastError = error;
 
         const status = error.response?.status;
-
-        logWarn(
-          `Overpass failed. endpoint=${endpoint}, attempt=${attempt}, status=${status || "N/A"}, code=${error.code || "N/A"}, message=${error.message}`
-        );
-
         const retryable =
           !status ||
+          status === 408 ||
+          status === 425 ||
+          status === 429 ||
+          status >= 500 ||
           isRetryableStatus(status);
 
-        if (
-          attempt < MAX_RETRIES_PER_ENDPOINT &&
-          retryable &&
-          Date.now() < deadline
-        ) {
+        logWarn(
+          `Overpass failed. endpoint=${endpoint}, attempt=${attempt}/2, status=${status || "N/A"}, code=${error.code || "N/A"}, message=${error.message}`
+        );
+
+        if (!retryable) {
+          // For a non-retryable response, move to the next server.
+          break;
+        }
+
+        if (attempt < 2) {
+          const remainingAfterFailure = deadline - Date.now();
+
+          if (remainingAfterFailure <= 0) {
+            break;
+          }
+
           const delay = Math.min(
             calculateRetryDelay(error, attempt),
-            Math.max(0, deadline - Date.now())
+            remainingAfterFailure
           );
 
+          logInfo(`Retrying ${endpoint} in ${delay}ms`);
           await sleep(delay);
-        } else {
-          break;
+        } else if (endpointIndex < OVERPASS_ENDPOINTS.length - 1) {
+          logWarn(
+            `Switching to next Overpass server: ${OVERPASS_ENDPOINTS[endpointIndex + 1]}`
+          );
         }
       }
     }
@@ -1443,6 +1455,7 @@ async function fetchOverpassData(query) {
     "All Overpass servers failed."
   );
 }
+
 // ============================================================
 // GET NEARBY BUSINESSES
 // ============================================================
