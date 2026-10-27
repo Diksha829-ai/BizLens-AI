@@ -1367,13 +1367,19 @@ async function requestOverpass(endpoint, query, timeoutMs) {
 async function fetchOverpassData(query) {
   let lastError = null;
   const deadline = Date.now() + OVERPASS_TOTAL_TIMEOUT;
+  const maxAttempts = Math.max(
+    1,
+    Number(process.env.OVERPASS_RETRIES || 2)
+  );
 
-  // Try each configured Overpass server in order.
-  for (let endpointIndex = 0; endpointIndex < OVERPASS_ENDPOINTS.length; endpointIndex++) {
+  for (
+    let endpointIndex = 0;
+    endpointIndex < OVERPASS_ENDPOINTS.length;
+    endpointIndex++
+  ) {
     const endpoint = OVERPASS_ENDPOINTS[endpointIndex];
 
-    // Allow up to two attempts per server, subject to the total deadline.
-    for (let attempt = 1; attempt <= 2; attempt++) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       const remainingMs = deadline - Date.now();
 
       if (remainingMs <= 0) {
@@ -1390,7 +1396,7 @@ async function fetchOverpassData(query) {
 
       try {
         logInfo(
-          `Requesting ${endpoint} - attempt ${attempt}/2`
+          `Requesting ${endpoint} - attempt ${attempt}/${maxAttempts}`
         );
 
         const elements = await requestOverpass(
@@ -1403,15 +1409,13 @@ async function fetchOverpassData(query) {
           `Received ${elements.length} raw OSM objects from ${endpoint}`
         );
 
-        return {
-          elements,
-          endpoint,
-          attempt,
-        };
+        return { elements, endpoint, attempt };
       } catch (error) {
         lastError = error;
 
         const status = error.response?.status;
+        const code = error.code || "N/A";
+
         const retryable =
           !status ||
           status === 408 ||
@@ -1421,40 +1425,53 @@ async function fetchOverpassData(query) {
           isRetryableStatus(status);
 
         logWarn(
-          `Overpass failed. endpoint=${endpoint}, attempt=${attempt}/2, status=${status || "N/A"}, code=${error.code || "N/A"}, message=${error.message}`
+          `Overpass failed. endpoint=${endpoint}, ` +
+          `attempt=${attempt}/${maxAttempts}, ` +
+          `status=${status || "N/A"}, code=${code}, ` +
+          `message=${error.message}`
         );
 
-        if (!retryable) {
-          // For a non-retryable response, move to the next server.
+        // Move on quickly if the connection is refused or unreachable.
+        const connectionUnavailable = [
+          "ECONNREFUSED",
+          "ENETUNREACH",
+          "EHOSTUNREACH",
+          "EAI_AGAIN"
+        ].includes(code);
+
+        if (
+          !retryable ||
+          connectionUnavailable ||
+          attempt >= maxAttempts
+        ) {
           break;
         }
 
-        if (attempt < 2) {
-          const remainingAfterFailure = deadline - Date.now();
+        const remainingAfterFailure = deadline - Date.now();
 
-          if (remainingAfterFailure <= 0) {
-            break;
-          }
-
-          const delay = Math.min(
-            calculateRetryDelay(error, attempt),
-            remainingAfterFailure
-          );
-
-          logInfo(`Retrying ${endpoint} in ${delay}ms`);
-          await sleep(delay);
-        } else if (endpointIndex < OVERPASS_ENDPOINTS.length - 1) {
-          logWarn(
-            `Switching to next Overpass server: ${OVERPASS_ENDPOINTS[endpointIndex + 1]}`
-          );
+        if (remainingAfterFailure <= 0) {
+          break;
         }
+
+        const delay = Math.min(
+          calculateRetryDelay(error, attempt),
+          remainingAfterFailure
+        );
+
+        logInfo(`Retrying ${endpoint} in ${delay}ms`);
+        await sleep(delay);
       }
+    }
+
+    if (endpointIndex < OVERPASS_ENDPOINTS.length - 1) {
+      logWarn(
+        `Switching to next Overpass server: ` +
+        `${OVERPASS_ENDPOINTS[endpointIndex + 1]}`
+      );
     }
   }
 
-  throw lastError || new Error(
-    "All Overpass servers failed."
-  );
+  throw lastError || new Error("All Overpass servers failed.");
 }
 
 // ============================================================
