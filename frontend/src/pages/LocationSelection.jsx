@@ -1569,7 +1569,7 @@ function LocationSelection() {
     {
       label: "Saved Analyses",
       icon: "📁",
-      path: null,
+      path:"/saved-analyses",
     },
 
     {
@@ -1659,13 +1659,11 @@ function LocationSelection() {
         <div className="bizlens-sidebar-bottom">
 
           <button
-            className="bizlens-nav-item"
-            onClick={() =>
-              alert(
-                "Settings will be available soon."
-              )
-            }
-          >
+  className="bizlens-nav-item"
+  onClick={() => {
+    navigate("/settings");
+  }}
+>
 
             <span className="bizlens-nav-icon">
               ⚙️

@@ -2249,11 +2249,9 @@ const detectedCompetitors =
     // CATEGORY DEMAND SCORE
     // --------------------------------------------------------
 
-    const categoryDemandScore =
-      calculateDemandRelevance(
-        demand,
-        normalizedCategory
-      );
+    // --------------------------------------------------------
+// CATEGORY DEMAND SCORE
+// --------------------------------------------------------
 
     // --------------------------------------------------------
     // BUSINESS SCORING
@@ -2273,6 +2271,14 @@ const detectedCompetitors =
 
   dataCoverage: coverage.score,
 });
+
+// --------------------------------------------------------
+// CATEGORY DEMAND SCORE
+// --------------------------------------------------------
+
+const categoryDemandScore =
+  scoring.categoryDemandScore;
+  
     // --------------------------------------------------------
     // SAVE ANALYSIS
     // --------------------------------------------------------
@@ -2841,8 +2847,8 @@ const getSavedAnalyses = async (req, res) => {
     })
       .sort({ createdAt: -1 })
       .select(
-        "_id latitude longitude radius category successScore successLevel riskScore riskLevel confidenceScore confidence mlPrediction createdAt updatedAt"
-      );
+  "_id latitude longitude radius category successScore successLevel competitionScore demandScore accessibilityScore locationAttractiveness riskScore riskLevel confidenceScore confidence mlPrediction createdAt updatedAt"
+);
 
     res.status(200).json({
       success: true,

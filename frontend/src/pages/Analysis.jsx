@@ -38,14 +38,53 @@ L.Icon.Default.mergeOptions({
 // ============================================================
 // MAP UPDATER
 // ============================================================
-
 function MapUpdater({ latitude, longitude }) {
   const map = useMap();
 
   useEffect(() => {
-    if (latitude !== null && longitude !== null) {
-      map.setView([latitude, longitude], 14);
+    if (latitude === null || longitude === null) {
+      return;
     }
+
+    const updateMapSize = () => {
+      map.invalidateSize({
+        animate: false,
+        pan: false,
+      });
+
+      map.setView(
+        [latitude, longitude],
+        map.getZoom(),
+        {
+          animate: false,
+        }
+      );
+    };
+
+    // Initial update
+    updateMapSize();
+
+    // Watch the actual map container size.
+    const container = map.getContainer();
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateMapSize();
+    });
+
+    resizeObserver.observe(container);
+
+    // Extra updates after layout/paint.
+    const timer1 = setTimeout(updateMapSize, 100);
+    const timer2 = setTimeout(updateMapSize, 300);
+    const timer3 = setTimeout(updateMapSize, 600);
+
+    return () => {
+      resizeObserver.disconnect();
+
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+    };
   }, [latitude, longitude, map]);
 
   return null;
@@ -1084,751 +1123,261 @@ function Analysis() {
           <section className="results-section">
 
             <div className="results-heading">
-
               <div>
-
-                <span className="section-label">
-                  AI RESULTS
-                </span>
-
-                <h2>
-                  Location Analysis Results
-                </h2>
-
+                <span className="section-label">AI RESULTS</span>
+                <h2>Location Analysis Results</h2>
                 <p>
-                  AI-generated insights based on the
-                  selected location and business category.
+                  AI-generated insights based on the selected location and business category.
                 </p>
-
               </div>
-
-              <div className="result-generated">
-                ✓ Analysis Complete
-              </div>
-
+              <div className="result-generated">✓ Analysis Complete</div>
             </div>
 
-
-            {/* ==============================================
-                SUCCESS SCORE
-            ============================================== */}
-
+            {/* BUSINESS OPPORTUNITY */}
             <div className="success-score-card">
-
               <div className="success-score-content">
-
                 <div>
-
-                  <span className="section-label">
-                    BUSINESS SUCCESS SCORE
-                  </span>
-
-                  <h2>
-                    Overall Business Potential
-                  </h2>
-
+                  <span className="section-label">BUSINESS SUCCESS SCORE</span>
+                  <h2>Overall Business Potential</h2>
                   <p>
-                    Estimated likelihood that this
-                    location can support your selected
-                    business.
+                    Estimated likelihood that this location can support your selected business.
                   </p>
-
                   <div className="success-level">
-                    {businessSuccess?.level ||
-                      "N/A"}
+                    {businessSuccess?.level || "N/A"}
                   </div>
-
                   <div className="confidence-text">
-                    Model Confidence:{" "}
-                    <strong>
-                      {businessSuccess?.confidence ||
-                        "N/A"}
-                    </strong>
+                    Model Confidence: <strong>{businessSuccess?.confidence || "N/A"}</strong>
                   </div>
-
                 </div>
-
                 <div className="success-score-circle">
-
                   <div>
-
-                    <strong>
-                      {businessSuccess?.score ?? 0}
-                    </strong>
-
-                    <span>
-                      %
-                    </span>
-
+                    <strong>{businessSuccess?.score ?? 0}</strong>
+                    <span>%</span>
                   </div>
-
-                  <small>
-                    Success
-                  </small>
-
+                  <small>Success</small>
                 </div>
-
               </div>
-
             </div>
 
-
-            {/* ==============================================
-                SCORE CARDS
-            ============================================== */}
-
+            {/* GEOGRAPHIC SCORE CARDS */}
             <div className="result-score-grid">
-                  {/* ==============================================
-    ML OPPORTUNITY PREDICTION
-============================================== */}
-
-{mlPrediction && (
-  <div className="ml-prediction-card">
-
-    <div className="ml-prediction-header">
-
-      <div>
-        <span className="section-label">
-          MACHINE LEARNING PREDICTION
-        </span>
-
-        <h2>
-          Geographic Opportunity Prediction
-        </h2>
-
-        <p>
-          Prediction generated from OSM-derived
-          geographic features and the trained ML model.
-        </p>
-      </div>
-
-      <div className="ml-prediction-badge">
-        🤖 ML Model
-      </div>
-
-    </div>
-
-
-    <div className="ml-prediction-content">
-
-      <div className="ml-prediction-result">
-
-        <span>
-          Prediction
-        </span>
-
-        <strong>
-          {mlPrediction.predictionLabel || "N/A"}
-        </strong>
-
-        <small>
-          Model classification
-        </small>
-
-      </div>
-
-
-      <div className="ml-prediction-result">
-
-        <span>
-          Opportunity Probability
-        </span>
-
-        <strong>
-  {(
-    Number(
-      mlPrediction.opportunityProbability ?? 0
-    ) * 100
-  ).toFixed(2)}%
-</strong>
-
-        <small>
-          Probability of higher opportunity
-        </small>
-
-      </div>
-
-
-      <div className="ml-prediction-result">
-
-        <span>
-          Lower Opportunity Probability
-        </span>
-
-        <strong>
-  {(
-    (1 -
-      Number(
-        mlPrediction.opportunityProbability ?? 0
-      )) * 100
-  ).toFixed(2)}%
-</strong>
-
-        <small>
-          Model probability
-        </small>
-
-      </div>
-
-    </div>
-
-
-    {mlPrediction.geographicFeatures && (
-      <div className="ml-features">
-
-        <div className="ml-feature">
-          <span>POIs within 500m</span>
-          <strong>
-            {mlPrediction.geographicFeatures.pois_500m ?? 0}
-          </strong>
-        </div>
-
-        <div className="ml-feature">
-          <span>POIs within 1km</span>
-          <strong>
-            {mlPrediction.geographicFeatures.pois_1km ?? 0}
-          </strong>
-        </div>
-
-        <div className="ml-feature">
-          <span>Competitors within 1km</span>
-          <strong>
-            {mlPrediction.geographicFeatures.competitors_1km ?? 0}
-          </strong>
-        </div>
-
-        <div className="ml-feature">
-          <span>Nearest Competitor</span>
-          <strong>
-            {mlPrediction.geographicFeatures.nearest_competitor_m ?? 0} m
-          </strong>
-        </div>
-
-        <div className="ml-feature">
-          <span>POI Density / km²</span>
-          <strong>
-            {mlPrediction.geographicFeatures.poi_density_1km ?? 0}
-          </strong>
-        </div>
-
-        <div className="ml-feature">
-          <span>Category POIs</span>
-          <strong>
-            {mlPrediction.geographicFeatures.category_poi_count ?? 0}
-          </strong>
-        </div>
-
-      </div>
-
-    )}
-{mlPrediction.geographicFeatures.geographic_signals &&
-  mlPrediction.geographicFeatures.geographic_signals.length > 0 && (
-    <div className="ml-signals">
-
-      <div className="ml-signals-header">
-        <span className="section-label">
-          GEOGRAPHIC SIGNALS
-        </span>
-
-        <h3>
-          Why this location?
-        </h3>
-
-        <p>
-          Key geographic factors considered by the analysis.
-        </p>
-      </div>
- {mlPrediction.geographicFeatures &&
-  mlPrediction.geographicFeatures.category_data_available === false && (
-    <div className="ml-data-warning">
-
-      <div className="ml-data-warning-icon">
-        ⚠
-      </div>
-
-      <div className="ml-data-warning-content">
-
-        <strong>
-          Limited Category Data
-        </strong>
-
-        <p>
-          {mlPrediction.geographicFeatures.category_data_warning ||
-            "Category-specific OSM data is unavailable for this category. The prediction should be interpreted with caution."}
-        </p>
-
-      </div>
-
-    </div>
-  )}
-      <div className="ml-signals-list">
-
-        {mlPrediction.geographicFeatures.geographic_signals.map(
-          (signal, index) => (
-            <div
-              className="ml-signal"
-              key={index}
-            >
-              <span className="ml-signal-icon">
-                ✓
-              </span>
-
-              <span>
-                {signal}
-              </span>
-            </div>
-          )
-        )}
-
-      </div>
-
-    </div>
-  )}
-
-    <div className="ml-prediction-note">
-
-
-      <span>ℹ️</span>
-
-      <p>
-        {mlPrediction.interpretation ||
-          "ML prediction based on geographic opportunity features."}
-      </p>
-
-    </div>
-
-  </div>
-)}
-
-              <ScoreCard
-                icon="📈"
-                title="Demand Score"
-                value={demand?.score ?? 0}
-                type="demand"
-              />
-
-              <ScoreCard
-                icon="⚔️"
-                title="Competition Score"
-                value={competitors?.score ?? 0}
-                type="competition"
-              />
-
-              <ScoreCard
-                icon="🚶"
-                title="Accessibility Score"
-                value={accessibility?.score ?? 0}
-                type="accessibility"
-              />
-
-              <ScoreCard
-                icon="⚠️"
-                title="Risk Score"
-                value={risk?.score ?? 0}
-                type="risk"
-              />
-
+              <ScoreCard icon="📈" title="Demand Score" value={demand?.score ?? 0} type="demand" />
+              <ScoreCard icon="⚔️" title="Competition Score" value={competitors?.score ?? 0} type="competition" />
+              <ScoreCard icon="🚶" title="Accessibility Score" value={accessibility?.score ?? 0} type="accessibility" />
+              <ScoreCard icon="⚠️" title="Risk Score" value={risk?.score ?? 0} type="risk" />
             </div>
 
-
-            {/* ==============================================
-                COMPETITION + DEMAND
-            ============================================== */}
-
-            <div className="result-two-column">
-
-              {/* COMPETITION */}
-
-              <div className="result-detail-card">
-
-                <div className="detail-card-header">
-
-                  <div className="detail-icon">
-                    ⚔️
-                  </div>
-
+            {/* ML PREDICTION */}
+            {mlPrediction && (
+              <div className="ml-prediction-card">
+                <div className="ml-prediction-header">
                   <div>
-
-                    <h3>
-                      Competition
-                    </h3>
-
-                    <span>
-                      Nearby business landscape
-                    </span>
-
-                  </div>
-
-                </div>
-
-                <div className="detail-stat-grid">
-
-                  <DetailStat
-                    label="Total Competitors"
-                    value={competitors?.count ?? 0}
-                  />
-
-                  <DetailStat
-                    label="Within 500m"
-                    value={
-                      competitors?.within500m ?? 0
-                    }
-                  />
-
-                  <DetailStat
-                    label="Within 1km"
-                    value={
-                      competitors?.within1km ?? 0
-                    }
-                  />
-
-                  <DetailStat
-                    label="Average Distance"
-                    value={
-                      competitors?.averageDistance
-                        ? `${competitors.averageDistance} km`
-                        : "N/A"
-                    }
-                  />
-
-                </div>
-
-                <div className="nearest-competitor">
-
-                  <span>
-                    Nearest Competitor
-                  </span>
-
-                  <strong>
-                    {competitors?.nearest?.name ||
-                      "No nearby competitor found"}
-                  </strong>
-
-                </div>
-
-              </div>
-
-
-              {/* DEMAND */}
-
-              <div className="result-detail-card">
-
-                <div className="detail-card-header">
-
-                  <div className="detail-icon demand-icon">
-                    📊
-                  </div>
-
-                  <div>
-
-                    <h3>
-                      Demand Indicators
-                    </h3>
-
-                    <span>
-                      Nearby demand-generating factors
-                    </span>
-
-                  </div>
-
-                </div>
-
-                <div className="indicator-grid">
-
-                  <Indicator
-                    icon="🎓"
-                    label="Education"
-                    value={demand?.education ?? 0}
-                  />
-
-                  <Indicator
-                    icon="🏢"
-                    label="Offices"
-                    value={demand?.offices ?? 0}
-                  />
-
-                  <Indicator
-                    icon="🏥"
-                    label="Hospitals"
-                    value={demand?.hospitals ?? 0}
-                  />
-
-                  <Indicator
-                    icon="🩺"
-                    label="Clinics"
-                    value={demand?.clinics ?? 0}
-                  />
-
-                  <Indicator
-                    icon="💊"
-                    label="Pharmacies"
-                    value={demand?.pharmacies ?? 0}
-                  />
-
-                  <Indicator
-                    icon="🛍️"
-                    label="Shopping"
-                    value={demand?.shopping ?? 0}
-                  />
-
-                  <Indicator
-                    icon="🚌"
-                    label="Transport"
-                    value={demand?.transport ?? 0}
-                  />
-
-                  <Indicator
-                    icon="🏛️"
-                    label="Tourism"
-                    value={demand?.tourism ?? 0}
-                  />
-
-                  <Indicator
-                    icon="🏠"
-                    label="Residential"
-                    value={demand?.residential ?? 0}
-                  />
-
-                </div>
-
-              </div>
-
-            </div>
-
-
-            {/* ==============================================
-                ACCESSIBILITY
-            ============================================== */}
-
-            <div className="result-detail-card full-detail-card">
-
-              <div className="detail-card-header">
-
-                <div className="detail-icon accessibility-icon">
-                  🚦
-                </div>
-
-                <div>
-
-                  <h3>
-                    Accessibility
-                  </h3>
-
-                  <span>
-                    How easy it is for customers to
-                    reach the location
-                  </span>
-
-                </div>
-
-              </div>
-
-              <div className="accessibility-grid">
-
-                <AccessibilityItem
-                  icon="🚌"
-                  label="Public Transport"
-                  value={
-                    accessibility?.transport ?? 0
-                  }
-                />
-
-                <AccessibilityItem
-                  icon="🛣️"
-                  label="Road Access"
-                  value={
-                    accessibility?.roads ?? 0
-                  }
-                />
-
-                <AccessibilityItem
-                  icon="🅿️"
-                  label="Parking"
-                  value={
-                    accessibility?.parking ?? 0
-                  }
-                />
-
-                <AccessibilityItem
-                  icon="🚶"
-                  label="Walkable Paths"
-                  value={
-                    accessibility?.walkable ?? 0
-                  }
-                />
-
-              </div>
-
-            </div>
-
-
-            {/* ==============================================
-                RECOMMENDATIONS
-            ============================================== */}
-
-            {analysisData?.recommendations?.length >
-              0 && (
-
-              <div className="recommendations-card">
-
-                <div className="recommendations-header">
-
-                  <div className="recommendation-ai-icon">
-                    🤖
-                  </div>
-
-                  <div>
-
-                    <span className="section-label">
-                      AI INSIGHTS
-                    </span>
-
-                    <h2>
-                      Recommendations
-                    </h2>
-
+                    <span className="section-label">MACHINE LEARNING PREDICTION</span>
+                    <h2>Geographic Opportunity Prediction</h2>
                     <p>
-                      Actionable suggestions based on
-                      the analysis results.
+                      Prediction generated from OSM-derived geographic features and the trained ML model.
                     </p>
-
                   </div>
-
+                  <div className="ml-prediction-badge">🤖 ML Model</div>
                 </div>
 
-                <div className="recommendation-list">
-
-                  {analysisData.recommendations.map(
-                    (recommendation, index) => (
-
-                      <div
-                        className="recommendation-item"
-                        key={index}
-                      >
-
-                        <div className="recommendation-number">
-                          {String(index + 1).padStart(
-                            2,
-                            "0"
-                          )}
-                        </div>
-
-                        <div>
-
-                          <strong>
-                            {typeof recommendation ===
-                            "string"
-                              ? recommendation
-                              : recommendation.message ||
-                                recommendation.text ||
-                                JSON.stringify(
-                                  recommendation
-                                )}
-                          </strong>
-
-                        </div>
-
-                      </div>
-
-                    )
-                  )}
-
+                <div className="ml-prediction-content">
+                  <div className="ml-prediction-result">
+                    <span>Prediction</span>
+                    <strong>{mlPrediction.predictionLabel || "N/A"}</strong>
+                    <small>Model classification</small>
+                  </div>
+                  <div className="ml-prediction-result">
+                    <span>Opportunity Probability</span>
+                    <strong>
+                      {(Number(mlPrediction.opportunityProbability ?? 0) * 100).toFixed(2)}%
+                    </strong>
+                    <small>Probability of higher opportunity</small>
+                  </div>
+                  <div className="ml-prediction-result">
+                    <span>Lower Opportunity Probability</span>
+                    <strong>
+                      {((1 - Number(mlPrediction.opportunityProbability ?? 0)) * 100).toFixed(2)}%
+                    </strong>
+                    <small>Model probability</small>
+                  </div>
                 </div>
 
+                {mlPrediction.geographicFeatures && (
+                  <div className="ml-features">
+                    <div className="ml-feature"><span>POIs within 500m</span><strong>{mlPrediction.geographicFeatures.pois_500m ?? 0}</strong></div>
+                    <div className="ml-feature"><span>POIs within 1km</span><strong>{mlPrediction.geographicFeatures.pois_1km ?? 0}</strong></div>
+                    <div className="ml-feature"><span>Competitors within 1km</span><strong>{mlPrediction.geographicFeatures.competitors_1km ?? 0}</strong></div>
+                    <div className="ml-feature"><span>Nearest Competitor</span><strong>{mlPrediction.geographicFeatures.nearest_competitor_m ?? 0} m</strong></div>
+                    <div className="ml-feature"><span>POI Density / km²</span><strong>{mlPrediction.geographicFeatures.poi_density_1km ?? 0}</strong></div>
+                    <div className="ml-feature"><span>Category POIs</span><strong>{mlPrediction.geographicFeatures.category_poi_count ?? 0}</strong></div>
+                  </div>
+                )}
+
+                {mlPrediction.geographicFeatures?.category_data_available === false && (
+                  <div className="ml-data-warning">
+                    <div className="ml-data-warning-icon">⚠</div>
+                    <div className="ml-data-warning-content">
+                      <strong>Limited Category Data</strong>
+                      <p>
+                        {mlPrediction.geographicFeatures.category_data_warning ||
+                          "Category-specific OSM data is unavailable for this category. The prediction should be interpreted with caution."}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {mlPrediction.geographicFeatures?.geographic_signals?.length > 0 && (
+                  <div className="ml-signals">
+                    <div className="ml-signals-header">
+                      <span className="section-label">GEOGRAPHIC SIGNALS</span>
+                      <h3>Why this location?</h3>
+                      <p>Key geographic factors considered by the analysis.</p>
+                    </div>
+                    <div className="ml-signals-list">
+                      {mlPrediction.geographicFeatures.geographic_signals.map((signal, index) => (
+                        <div className="ml-signal" key={index}>
+                          <span className="ml-signal-icon">✓</span>
+                          <span>{signal}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="ml-prediction-note">
+                  <span>ℹ️</span>
+                  <p>
+                    {mlPrediction.interpretation ||
+                      "ML prediction based on geographic opportunity features."}
+                  </p>
+                </div>
               </div>
             )}
 
-
-            {/* ==============================================
-                COMPETITOR LIST
-            ============================================== */}
-
-            {analysisData?.competitorBusinesses
-              ?.length > 0 && (
-
-              <div className="competitor-list-card">
-
+            {/* COMPETITION + DEMAND */}
+            <div className="result-two-column">
+              <div className="result-detail-card">
                 <div className="detail-card-header">
-
-                  <div className="detail-icon">
-                    🏪
-                  </div>
-
+                  <div className="detail-icon">⚔️</div>
                   <div>
-
-                    <h3>
-                      Nearby Competitors
-                    </h3>
-
-                    <span>
-                      Businesses found around your
-                      selected location
-                    </span>
-
+                    <h3>Competition</h3>
+                    <span>Nearby business landscape</span>
                   </div>
-
                 </div>
+                <div className="detail-stat-grid">
+                  <DetailStat label="Total Competitors" value={competitors?.count ?? 0} />
+                  <DetailStat label="Within 500m" value={competitors?.within500m ?? 0} />
+                  <DetailStat label="Within 1km" value={competitors?.within1km ?? 0} />
+                  <DetailStat label="Average Distance" value={competitors?.averageDistance ? `${competitors.averageDistance} km` : "N/A"} />
+                </div>
+                <div className="nearest-competitor">
+                  <span>Nearest Competitor</span>
+                  <strong>{competitors?.nearest?.name || "No nearby competitor found"}</strong>
+                </div>
+              </div>
 
-                <div className="competitor-table">
-
-                  <div className="competitor-table-header">
-                    <span>
-                      Business
-                    </span>
-
-                    <span>
-                      Category
-                    </span>
-
-                    <span>
-                      Distance
-                    </span>
+              <div className="result-detail-card">
+                <div className="detail-card-header">
+                  <div className="detail-icon demand-icon">📊</div>
+                  <div>
+                    <h3>Demand Indicators</h3>
+                    <span>Nearby demand-generating factors</span>
                   </div>
+                </div>
+                <div className="indicator-grid">
+                  <Indicator icon="🎓" label="Education" value={demand?.education ?? 0} />
+                  <Indicator icon="🏢" label="Offices" value={demand?.offices ?? 0} />
+                  <Indicator icon="🏥" label="Hospitals" value={demand?.hospitals ?? 0} />
+                  <Indicator icon="🩺" label="Clinics" value={demand?.clinics ?? 0} />
+                  <Indicator icon="💊" label="Pharmacies" value={demand?.pharmacies ?? 0} />
+                  <Indicator icon="🛍️" label="Shopping" value={demand?.shopping ?? 0} />
+                  <Indicator icon="🚌" label="Transport" value={demand?.transport ?? 0} />
+                  <Indicator icon="🏛️" label="Tourism" value={demand?.tourism ?? 0} />
+                  <Indicator icon="🏠" label="Residential" value={demand?.residential ?? 0} />
+                </div>
+              </div>
+            </div>
 
-                  {analysisData.competitorBusinesses.map(
-                    (competitor, index) => (
+            {/* ACCESSIBILITY */}
+            <div className="result-detail-card full-detail-card">
+              <div className="detail-card-header">
+                <div className="detail-icon accessibility-icon">🚦</div>
+                <div>
+                  <h3>Accessibility</h3>
+                  <span>How easy it is for customers to reach the location</span>
+                </div>
+              </div>
+              <div className="accessibility-grid">
+                <AccessibilityItem icon="🚌" label="Public Transport" value={accessibility?.transport ?? 0} />
+                <AccessibilityItem icon="🛣️" label="Road Access" value={accessibility?.roads ?? 0} />
+                <AccessibilityItem icon="🅿️" label="Parking" value={accessibility?.parking ?? 0} />
+                <AccessibilityItem icon="🚶" label="Walkable Paths" value={accessibility?.walkable ?? 0} />
+              </div>
+            </div>
 
-                      <div
-                        className="competitor-row"
-                        key={
-                          competitor.id ||
-                          index
-                        }
-                      >
-
-                        <div className="competitor-name">
-
-                          <div className="competitor-avatar">
-                            🏪
-                          </div>
-
-                          <strong>
-                            {competitor.name}
-                          </strong>
-
-                        </div>
-
-                        <span className="competitor-category">
-                          {competitor.category}
-                        </span>
-
-                        <span className="competitor-distance">
-                          📍 {competitor.distance} km
-                        </span>
-
+            {/* AI RECOMMENDATIONS */}
+            {analysisData?.recommendations?.length > 0 && (
+              <div className="recommendations-card">
+                <div className="recommendations-header">
+                  <div className="recommendation-ai-icon">🤖</div>
+                  <div>
+                    <span className="section-label">AI INSIGHTS</span>
+                    <h2>Recommendations</h2>
+                    <p>Actionable suggestions based on the analysis results.</p>
+                  </div>
+                </div>
+                <div className="recommendation-list">
+                  {analysisData.recommendations.map((recommendation, index) => (
+                    <div className="recommendation-item" key={index}>
+                      <div className="recommendation-number">
+                        {String(index + 1).padStart(2, "0")}
                       </div>
-
-                    )
-                  )}
-
+                      <div>
+                        <strong>
+                          {typeof recommendation === "string"
+                            ? recommendation
+                            : recommendation.message || recommendation.text || JSON.stringify(recommendation)}
+                        </strong>
+                      </div>
+                    </div>
+                  ))}
                 </div>
+              </div>
+            )}
 
+            {/* NEARBY COMPETITORS */}
+            {analysisData?.competitorBusinesses?.length > 0 && (
+              <div className="competitor-list-card">
+                <div className="detail-card-header">
+                  <div className="detail-icon">🏪</div>
+                  <div>
+                    <h3>Nearby Competitors</h3>
+                    <span>Businesses found around your selected location</span>
+                  </div>
+                </div>
+                <div className="competitor-table">
+                  <div className="competitor-table-header">
+                    <span>Business</span>
+                    <span>Category</span>
+                    <span>Distance</span>
+                  </div>
+                  {analysisData.competitorBusinesses.map((competitor, index) => (
+                    <div className="competitor-row" key={competitor.id || index}>
+                      <div className="competitor-name">
+                        <div className="competitor-avatar">🏪</div>
+                        <strong>{competitor.name}</strong>
+                      </div>
+                      <span className="competitor-category">{competitor.category}</span>
+                      <span className="competitor-distance">📍 {competitor.distance} km</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
           </section>
         )}
-
 
         {/* ==================================================
             FOOTER
@@ -1844,9 +1393,11 @@ function Analysis() {
             AI-Powered Business Location Intelligence
           </span>
 
-        </footer>
+                </footer>
 
       </main>
+
+      {/* Floating BizLens AI Chatbot */}
 
     </div>
   );

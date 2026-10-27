@@ -1,3 +1,4 @@
+
 const jwt = require("jsonwebtoken");
 
 const authMiddleware = (req, res, next) => {
@@ -33,6 +34,19 @@ const authMiddleware = (req, res, next) => {
     }
 
     // ============================================================
+    // CHECK JWT SECRET
+    // ============================================================
+
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET is not configured");
+
+      return res.status(500).json({
+        success: false,
+        message: "Server authentication is not configured",
+      });
+    }
+
+    // ============================================================
     // VERIFY JWT
     // ============================================================
 
@@ -42,63 +56,70 @@ const authMiddleware = (req, res, next) => {
     );
 
     // ============================================================
-    // DEBUG
-    // ============================================================
-
-    console.log("JWT DECODED:", decoded);
-
-    // ============================================================
     // SET AUTHENTICATED USER
+    // Supports different JWT payload formats
     // ============================================================
 
-    req.user = {
-      ...decoded,
-
-      // Support different JWT payload formats
-      id:
-        decoded.id ||
-        decoded._id ||
-        decoded.userId,
-    };
+    const userId =
+      decoded.userId ||
+      decoded.id ||
+      decoded._id;
 
     // ============================================================
     // CHECK USER ID
     // ============================================================
 
-    if (!req.user.id) {
-      console.error(
-        "JWT does not contain a valid user ID:",
-        decoded
-      );
-
+    if (!userId) {
       return res.status(401).json({
         success: false,
         message: "Invalid token: user ID is missing",
       });
     }
 
-    console.log(
-      "Authenticated User ID:",
-      req.user.id
-    );
-
     // ============================================================
-    // CONTINUE
+    // ATTACH AUTHENTICATED USER TO REQUEST
+    // Supports both req.user.id and req.user.userId
     // ============================================================
 
-    next();
+    req.user = {
+      ...decoded,
+      id: userId,
+      userId: userId,
+    };
+
+    // ============================================================
+    // CONTINUE TO PROTECTED ROUTE
+    // ============================================================
+
+    return next();
 
   } catch (error) {
+    // ============================================================
+    // HANDLE AUTHENTICATION ERRORS
+    // ============================================================
+
+    if (
+      error.name === "TokenExpiredError" ||
+      error.name === "JsonWebTokenError" ||
+      error.name === "NotBeforeError"
+    ) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired token",
+      });
+    }
+
     console.error(
       "Authentication error:",
       error.message
     );
 
-    return res.status(401).json({
+    return res.status(500).json({
       success: false,
-      message: "Invalid or expired token",
+      message: "Authentication failed due to a server error",
     });
   }
 };
 
 module.exports = authMiddleware;
+                                            

@@ -1,3 +1,4 @@
+
 const dns = require("dns");
 
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
@@ -17,6 +18,9 @@ const connectDB = require("./config/db");
 
 const authRoutes = require("./routes/authRoutes");
 const analysisRoutes = require("./routes/analysisRoutes");
+
+// NEW: AI chatbot routes
+
 
 // ============================================================
 // LOAD ENVIRONMENT VARIABLES
@@ -101,6 +105,11 @@ app.use(
   "/api/analysis",
   analysisRoutes
 );
+
+// ============================================================
+// AI CHATBOT ROUTES — NEW
+// ============================================================
+
 
 // ============================================================
 // HOME ROUTE

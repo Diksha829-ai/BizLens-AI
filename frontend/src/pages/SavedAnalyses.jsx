@@ -311,8 +311,7 @@ function SavedAnalyses() {
                   {/* HISTORICAL WARNING */}
                   {!detailedDataAvailable && (
                     <div className="saved-warning">
-                      Detailed analysis data is unavailable for this
-                      historical record.
+                      Detailed geographic breakdown is unavailable for this historical record.
                     </div>
                   )}
 

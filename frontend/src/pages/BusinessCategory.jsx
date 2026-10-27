@@ -10,7 +10,7 @@ function BusinessCategory() {
   const [longitude, setLongitude] = useState(null);
   const [locationName, setLocationName] = useState("");
   const [category, setCategory] = useState("");
-
+  const [searchTerm, setSearchTerm] = useState("");
   // ===================================================
   // LOAD SELECTED LOCATION
   // ===================================================
@@ -343,6 +343,160 @@ function BusinessCategory() {
     description: "Everyday household products",
   },
 ];
+
+// ===================================================
+// FILTER CATEGORIES
+// ===================================================
+
+const normalizedSearch = searchTerm
+  .trim()
+  .toLowerCase();
+
+const filteredCategories = categories.filter((item) => {
+  if (!normalizedSearch) {
+    return true;
+  }
+
+  const name = String(item.name || "").toLowerCase();
+  const description = String(item.description || "").toLowerCase();
+
+  return (
+    name.includes(normalizedSearch) ||
+    description.includes(normalizedSearch)
+  );
+});
+
+const popularCategories = [
+  "cafe",
+  "restaurant",
+  "grocery",
+  "pharmacy",
+  "gym",
+  "salon",
+].map((value) =>
+  categories.find(
+    (item) => item.value === value
+  )
+).filter(Boolean);
+
+// ===================================================
+// CATEGORY GROUPS
+// ===================================================
+const categoryGroups = [
+  {
+    name: "Food & Beverages",
+    icon: "🍽️",
+    values: [
+      "cafe",
+      "restaurant",
+      "bakery",
+      "fast_food",
+      "juice_shop",
+    ],
+  },
+
+  {
+    name: "Grocery & Daily Needs",
+    icon: "🛒",
+    values: [
+      "grocery",
+      "supermarket",
+      "vegetable_fruit",
+      "dairy",
+      "meat",
+      "general_store",
+    ],
+  },
+
+  {
+    name: "Healthcare",
+    icon: "🏥",
+    values: [
+      "pharmacy",
+      "clinic",
+      "dentist",
+      "diagnostic",
+      "optical",
+    ],
+  },
+
+  {
+    name: "Beauty & Personal Care",
+    icon: "💇",
+    values: [
+      "salon",
+      "beauty_parlour",
+      "spa",
+    ],
+  },
+
+  {
+    name: "Fitness & Wellness",
+    icon: "🏋️",
+    values: [
+      "gym",
+      "yoga",
+      "sports_center",
+    ],
+  },
+
+  {
+    name: "Shopping & Retail",
+    icon: "🛍️",
+    values: [
+      "clothing",
+      "footwear",
+      "mobile_store",
+      "electronics",
+      "furniture",
+    ],
+  },
+
+  {
+    name: "Home & Local Services",
+    icon: "🏠",
+    values: [
+      "hardware",
+      "electrical",
+      "plumbing",
+      "laundry",
+    ],
+  },
+
+  {
+    name: "Education",
+    icon: "📚",
+    values: [
+      "tuition",
+      "computer_institute",
+      "stationery",
+    ],
+  },
+
+  {
+    name: "Automotive",
+    icon: "🚗",
+    values: [
+      "petrol_pump",
+      "car_service",
+      "bike_service",
+      "car_wash",
+    ],
+  },
+
+  {
+    name: "Other Services",
+    icon: "🧰",
+    values: [
+      "pet_shop",
+      "mobile_repair",
+      "courier",
+      "printing",
+    ],
+  },
+];
+
+
   // ===================================================
   // CATEGORY SELECT
   // ===================================================
@@ -572,14 +726,258 @@ function BusinessCategory() {
 
           </div>
 
+{/* =================================================
+    SEARCH
+    ================================================= */}
 
-          {/* =================================================
-              CATEGORY GRID
-              ================================================= */}
+<div className="category-search-wrapper">
+
+  <span className="category-search-icon">
+    🔍
+  </span>
+
+  <input
+    type="text"
+    value={searchTerm}
+    onChange={(event) =>
+      setSearchTerm(event.target.value)
+    }
+    placeholder="Search cafe, restaurant, gym, grocery..."
+    className="category-search-input"
+  />
+
+  {searchTerm && (
+    <button
+      type="button"
+      className="category-search-clear"
+      onClick={() => setSearchTerm("")}
+      aria-label="Clear search"
+    >
+      ×
+    </button>
+  )}
+
+</div>
+
+
+{/* =================================================
+    POPULAR CATEGORIES
+    ================================================= */}
+
+{!searchTerm && (
+  <div className="popular-category-section">
+
+    <div className="category-section-heading">
+
+      <div>
+        <span className="category-section-icon">
+          ⭐
+        </span>
+
+        <strong>
+          Popular categories
+        </strong>
+      </div>
+
+      <span>
+        Quick selection
+      </span>
+
+    </div>
+
+
+    <div className="popular-category-grid">
+
+      {popularCategories.map((item) => {
+
+        const isSelected =
+          category === item.value;
+
+        return (
+          <button
+            key={item.value}
+            type="button"
+            className={`popular-category-card ${
+              isSelected ? "selected" : ""
+            }`}
+            onClick={() =>
+              handleCategorySelect(item.value)
+            }
+          >
+
+            <span className="popular-category-icon">
+              {item.emoji}
+            </span>
+
+            <span>
+              {item.name}
+            </span>
+
+            {isSelected && (
+              <span className="popular-category-check">
+                ✓
+              </span>
+            )}
+
+          </button>
+        );
+
+      })}
+
+    </div>
+
+  </div>
+)}
+
+
+{/* =================================================
+    SEARCH RESULTS
+    ================================================= */}
+
+{searchTerm ? (
+
+  <div className="category-search-results">
+
+    <div className="category-section-heading">
+
+      <div>
+        <span className="category-section-icon">
+          🔎
+        </span>
+
+        <strong>
+          Search results
+        </strong>
+      </div>
+
+      <span>
+        {filteredCategories.length} found
+      </span>
+
+    </div>
+
+
+    {filteredCategories.length > 0 ? (
+
+      <div className="business-category-grid">
+
+        {filteredCategories.map((item) => {
+
+          const isSelected =
+            category === item.value;
+
+          return (
+            <button
+              key={item.value}
+              type="button"
+              className={`business-category-card ${
+                isSelected ? "selected" : ""
+              }`}
+              onClick={() =>
+                handleCategorySelect(item.value)
+              }
+            >
+
+              {isSelected && (
+                <div className="category-check">
+                  ✓
+                </div>
+              )}
+
+              <div className="business-category-icon">
+                {item.emoji}
+              </div>
+
+              <h3>
+                {item.name}
+              </h3>
+
+              <p>
+                {item.description}
+              </p>
+
+            </button>
+          );
+
+        })}
+
+      </div>
+
+    ) : (
+
+      <div className="category-no-results">
+
+        <div>
+          🔍
+        </div>
+
+        <strong>
+          No matching category
+        </strong>
+
+        <p>
+          Try searching for another business type.
+        </p>
+
+      </div>
+
+    )}
+
+  </div>
+
+) : (
+
+  /* =================================================
+     GROUPED CATEGORIES
+     ================================================= */
+
+  <div className="category-groups">
+
+    {categoryGroups.map((group) => {
+
+      const groupCategories =
+        group.values
+          .map((value) =>
+            categories.find(
+              (item) => item.value === value
+            )
+          )
+          .filter(Boolean);
+
+      return (
+        <section
+          key={group.name}
+          className="category-group"
+        >
+
+          <div className="category-group-header">
+
+            <div className="category-group-title">
+
+              <span className="category-group-icon">
+                {group.icon}
+              </span>
+
+              <div>
+
+                <h3>
+                  {group.name}
+                </h3>
+
+                <p>
+                  {groupCategories.length} business types
+                </p>
+
+              </div>
+
+            </div>
+
+          </div>
+
 
           <div className="business-category-grid">
 
-            {categories.map((item) => {
+            {groupCategories.map((item) => {
 
               const isSelected =
                 category === item.value;
@@ -589,18 +987,12 @@ function BusinessCategory() {
                   key={item.value}
                   type="button"
                   className={`business-category-card ${
-                    isSelected
-                      ? "selected"
-                      : ""
+                    isSelected ? "selected" : ""
                   }`}
                   onClick={() =>
-                    handleCategorySelect(
-                      item.value
-                    )
+                    handleCategorySelect(item.value)
                   }
                 >
-
-                  {/* SELECTED CHECK */}
 
                   {isSelected && (
                     <div className="category-check">
@@ -608,19 +1000,13 @@ function BusinessCategory() {
                     </div>
                   )}
 
-                  {/* ICON */}
-
                   <div className="business-category-icon">
                     {item.emoji}
                   </div>
 
-                  {/* NAME */}
-
                   <h3>
                     {item.name}
                   </h3>
-
-                  {/* DESCRIPTION */}
 
                   <p>
                     {item.description}
@@ -632,6 +1018,15 @@ function BusinessCategory() {
             })}
 
           </div>
+
+        </section>
+      );
+
+    })}
+
+  </div>
+
+)}
 
 
           {/* =================================================

@@ -96,9 +96,9 @@ function AnalysisPreview() {
           savedCategory
       );
 
-      const savedRadius = localStorage.getItem(
-        "analysisRadius"
-      );
+      const savedRadius =
+  localStorage.getItem("selectedRadius") ||
+  localStorage.getItem("analysisRadius");
 
       if (savedRadius) {
         const parsedRadius = Number(savedRadius);
@@ -139,9 +139,14 @@ function AnalysisPreview() {
     }
 
     localStorage.setItem(
-      "analysisRadius",
-      String(radius)
-    );
+  "selectedRadius",
+  String(radius)
+);
+
+localStorage.setItem(
+  "analysisRadius",
+  String(radius)
+);
 
     localStorage.removeItem(
       "analysisResult"

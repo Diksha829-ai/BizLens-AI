@@ -1,0 +1,562 @@
+/* ============================================================
+   BIZLENS AI — SETTINGS PAGE
+   ============================================================ */
+
+.settings-page {
+  min-height: 100vh;
+  display: flex;
+  background: #f7f9fc;
+  color: #172033;
+  font-family: inherit;
+}
+
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+
+.settings-sidebar {
+  width: 248px;
+  min-height: 100vh;
+  background: #ffffff;
+  border-right: 1px solid #e5eaf0;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 14px;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 20;
+}
+
+
+/* BRAND */
+
+.settings-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 4px 10px 26px;
+}
+
+.settings-brand-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 800;
+  box-shadow: 0 5px 14px rgba(37, 99, 235, 0.18);
+}
+
+.settings-brand strong {
+  font-size: 17px;
+  font-weight: 750;
+  color: #172033;
+}
+
+.settings-brand span {
+  color: #2563eb;
+  font-weight: 800;
+  margin-left: 2px;
+}
+
+
+/* NAVIGATION */
+
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.settings-sidebar-bottom {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-top: 20px;
+  border-top: 1px solid #edf0f4;
+}
+
+.settings-nav-item {
+  width: 100%;
+  min-height: 44px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #5b6678;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 13px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.settings-nav-item span {
+  width: 22px;
+  text-align: center;
+  font-size: 17px;
+}
+
+.settings-nav-item:hover {
+  background: #f3f6fb;
+  color: #2563eb;
+  transform: translateX(2px);
+}
+
+.settings-nav-item.active {
+  background: #eff5ff;
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.settings-nav-item.logout:hover {
+  background: #fff3f3;
+  color: #dc2626;
+}
+
+
+/* ============================================================
+   MAIN CONTENT
+   ============================================================ */
+
+.settings-main {
+  width: calc(100% - 248px);
+  margin-left: 248px;
+  min-height: 100vh;
+  padding: 42px 48px 60px;
+}
+
+
+/* HEADER */
+
+.settings-header {
+  max-width: 1050px;
+  margin: 0 auto 30px;
+}
+
+.settings-eyebrow {
+  margin: 0 0 7px;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+}
+
+.settings-header h1 {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.15;
+  letter-spacing: -0.7px;
+  color: #172033;
+}
+
+.settings-header > div > p:last-child {
+  margin: 9px 0 0;
+  color: #687386;
+  font-size: 14px;
+}
+
+
+/* ============================================================
+   SETTINGS CARDS
+   ============================================================ */
+
+.settings-card {
+  max-width: 1050px;
+  margin: 0 auto 18px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 15px;
+  padding: 24px;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.025),
+    0 8px 25px rgba(15, 23, 42, 0.035);
+}
+
+.settings-card-header {
+  padding-bottom: 17px;
+  margin-bottom: 19px;
+  border-bottom: 1px solid #edf1f5;
+}
+
+.settings-card-header h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 17px;
+  font-weight: 750;
+}
+
+.settings-card-header p {
+  margin: 5px 0 0;
+  color: #7a8495;
+  font-size: 12px;
+}
+
+
+/* ============================================================
+   PROFILE
+   ============================================================ */
+
+.settings-profile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.settings-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 800;
+  box-shadow: 0 5px 14px rgba(37, 99, 235, 0.17);
+}
+
+.settings-profile h3 {
+  margin: 0;
+  color: #172033;
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.settings-profile p {
+  margin: 4px 0 0;
+  color: #7a8495;
+  font-size: 12px;
+}
+
+
+/* ============================================================
+   FORM
+   ============================================================ */
+
+.settings-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-field label {
+  margin-bottom: 7px;
+  color: #3d4758;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.settings-field input,
+.settings-preference select {
+  width: 100%;
+  height: 42px;
+  box-sizing: border-box;
+  border: 1px solid #d9e0e8;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #172033;
+  padding: 0 12px;
+  font-size: 13px;
+  outline: none;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.settings-field input:focus,
+.settings-preference select:focus {
+  border-color: #7aa7f8;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.settings-field input[readonly] {
+  background: #f8fafc;
+  color: #737d8d;
+  cursor: not-allowed;
+}
+
+.settings-field small {
+  margin-top: 6px;
+  color: #929aaa;
+  font-size: 10px;
+}
+
+
+/* ============================================================
+   PREFERENCES
+   ============================================================ */
+
+.settings-preference {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 25px;
+}
+
+.settings-preference > div {
+  flex: 1;
+}
+
+.settings-preference strong,
+.settings-security-row strong {
+  display: block;
+  color: #303b4d;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.settings-preference p,
+.settings-security-row p {
+  margin: 5px 0 0;
+  color: #7a8495;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.settings-preference select {
+  width: 145px;
+  flex-shrink: 0;
+}
+
+
+/* ============================================================
+   SECURITY
+   ============================================================ */
+
+.settings-security-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 25px;
+}
+
+.settings-secondary-button {
+  height: 39px;
+  padding: 0 15px;
+  border: 1px solid #d7dee8;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #344054;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.settings-secondary-button:hover {
+  background: #f5f8fc;
+  border-color: #b9c5d4;
+  color: #2563eb;
+}
+
+
+/* ============================================================
+   ACTIONS
+   ============================================================ */
+
+.settings-actions {
+  max-width: 1050px;
+  margin: 6px auto 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 14px;
+}
+
+.settings-success {
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.settings-save-button {
+  height: 42px;
+  padding: 0 21px;
+  border: none;
+  border-radius: 9px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 5px 14px rgba(37, 99, 235, 0.17);
+  transition:
+    background 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.settings-save-button:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 7px 17px rgba(37, 99, 235, 0.22);
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 900px) {
+
+  .settings-sidebar {
+    width: 215px;
+  }
+
+  .settings-main {
+    width: calc(100% - 215px);
+    margin-left: 215px;
+    padding: 35px 25px 50px;
+  }
+
+  .settings-form {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+
+@media (max-width: 700px) {
+
+  .settings-sidebar {
+    position: static;
+    width: 100%;
+    min-height: auto;
+    border-right: none;
+    border-bottom: 1px solid #e5eaf0;
+  }
+
+  .settings-page {
+    display: block;
+  }
+
+  .settings-main {
+    width: 100%;
+    margin-left: 0;
+    padding: 28px 18px 45px;
+  }
+
+  .settings-nav,
+  .settings-sidebar-bottom {
+    display: none;
+  }
+
+  .settings-header h1 {
+    font-size: 29px;
+  }
+
+  .settings-card {
+    padding: 20px;
+  }
+
+  .settings-preference,
+  .settings-security-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .settings-preference select {
+    width: 100%;
+  }
+
+  .settings-actions {
+    justify-content: stretch;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settings-save-button {
+    width: 100%;
+  }
+
+}
+
+
+/* Change Password Form */
+
+.settings-password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top: 1px solid #e5e7eb;
+  max-width: 520px;
+}
+
+.settings-password-form .settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-password-form .settings-field label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.settings-password-form .settings-field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #fff;
+  color: #111827;
+}
+
+.settings-password-form .settings-field input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.settings-password-form .settings-field small {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.settings-password-form .settings-save-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.settings-error {
+  display: block;
+  margin-top: 12px;
+  color: #dc2626;
+  font-size: 14px;
+}
+
+.settings-success {
+  display: block;
+  margin-top: 12px;
+  color: #15803d;
+  font-size: 14px;
+}

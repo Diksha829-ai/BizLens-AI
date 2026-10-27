@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import Login from "./pages/Login";
@@ -8,6 +9,8 @@ import BusinessCategory from "./pages/BusinessCategory";
 import AnalysisPreview from "./pages/AnalysisPreview";
 import Analysis from "./pages/Analysis";
 import SavedAnalyses from "./pages/SavedAnalyses";
+import Settings from "./pages/Settings";
+import CompareBusinesses from "./pages/CompareBusinesses";
 
 // =====================================================
 // PROTECTED ROUTE
@@ -16,7 +19,11 @@ import SavedAnalyses from "./pages/SavedAnalyses";
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem("token");
 
-  return token ? children : <Navigate to="/login" replace />;
+  return token ? (
+    children
+  ) : (
+    <Navigate to="/login" replace />
+  );
 }
 
 // =====================================================
@@ -39,6 +46,58 @@ function PublicAuthRoute({ children }) {
 // =====================================================
 
 function App() {
+
+  // ===================================================
+  // SESSION INITIALIZATION
+  //
+  // A new browser tab/session starts logged out.
+  // Refreshing the same tab keeps the current login.
+  // ===================================================
+
+  const [sessionReady, setSessionReady] = useState(false);
+
+  useEffect(() => {
+
+    const sessionStarted =
+      sessionStorage.getItem(
+        "bizlensSessionStarted"
+      );
+
+    // -----------------------------------------------
+    // NEW BROWSER SESSION
+    // -----------------------------------------------
+
+    if (!sessionStarted) {
+
+      // Clear previous login
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+
+      // Mark this browser tab/session as started
+      sessionStorage.setItem(
+        "bizlensSessionStarted",
+        "true"
+      );
+    }
+
+    setSessionReady(true);
+
+  }, []);
+
+
+  // ===================================================
+  // WAIT UNTIL SESSION IS INITIALIZED
+  // ===================================================
+
+  if (!sessionReady) {
+    return null;
+  }
+
+
+  // ===================================================
+  // ROUTES
+  // ===================================================
+
   return (
     <Routes>
 
@@ -49,23 +108,24 @@ function App() {
       <Route
         path="/"
         element={
-          <Navigate to="/dashboard" replace />
+          <Navigate to="/login" replace />
         }
       />
 
+
       {/* =================================================
           PUBLIC DASHBOARD
-          
-          IMPORTANT:
-          Dashboard must NOT be protected.
-          
-          Logged-out users can explore the dashboard.
+
+          Kept exactly as your current application.
+          Dashboard itself handles logged-in/logged-out
+          states.
           ================================================= */}
 
       <Route
         path="/dashboard"
         element={<Dashboard />}
       />
+
 
       {/* =================================================
           AUTHENTICATION
@@ -88,6 +148,7 @@ function App() {
           </PublicAuthRoute>
         }
       />
+
 
       {/* =================================================
           PROTECTED APPLICATION
@@ -128,14 +189,16 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
-  path="/saved-analyses"
-  element={
-    <ProtectedRoute>
-      <SavedAnalyses />
-    </ProtectedRoute>
-  }
-/>
+        path="/saved-analyses"
+        element={
+          <ProtectedRoute>
+            <SavedAnalyses />
+          </ProtectedRoute>
+        }
+      />
+
 
       {/* =================================================
           UNKNOWN ROUTE
@@ -144,9 +207,25 @@ function App() {
       <Route
         path="*"
         element={
-          <Navigate to="/dashboard" replace />
+          <Navigate to="/login" replace />
         }
       />
+      <Route
+  path="/settings"
+  element={
+    <ProtectedRoute>
+      <Settings />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/compare-businesses"
+  element={
+    <ProtectedRoute>
+      <CompareBusinesses />
+    </ProtectedRoute>
+  }
+/>
 
     </Routes>
   );
