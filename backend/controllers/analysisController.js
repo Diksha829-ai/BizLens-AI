@@ -17,8 +17,9 @@ const Analysis = require("../models/Analysis");
 // ============================================================
 // ML SERVICE
 // ============================================================
-
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://localhost:8000";
+const ML_SERVICE_URL =
+  process.env.ML_SERVICE_URL ||
+  "https://bizlens-ai-ml-service.onrender.com";
 
 const getMLPrediction = async ({
   latitude,
