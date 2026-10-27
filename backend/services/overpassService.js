@@ -39,23 +39,17 @@ const axios = require("axios");
 // ============================================================
 
 const OVERPASS_ENDPOINTS = [
-  "https://overpass-api.de/api/interpreter",
-  "https://overpass.kumi.systems/api/interpreter",
+  "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
   "https://overpass.private.coffee/api/interpreter",
+  "https://overpass-api.de/api/interpreter",
 ];
-
 // ============================================================
 // CONFIGURATION
 // ============================================================
 
-const REQUEST_TIMEOUT =
-  Number(process.env.OVERPASS_TIMEOUT || 15000);
-
-const MAX_RETRIES_PER_ENDPOINT =
-  Number(process.env.OVERPASS_RETRIES || 1);
-
-const OVERPASS_TOTAL_TIMEOUT =
-  Number(process.env.OVERPASS_TOTAL_TIMEOUT || 45000);
+const REQUEST_TIMEOUT = Number(process.env.OVERPASS_TIMEOUT || 15000);
+const MAX_RETRIES_PER_ENDPOINT = Number(process.env.OVERPASS_RETRIES || 1);
+const OVERPASS_TOTAL_TIMEOUT = Number(process.env.OVERPASS_TOTAL_TIMEOUT || 45000);
 
 const BASE_RETRY_DELAY =
   Number(process.env.OVERPASS_RETRY_DELAY || 1500);
