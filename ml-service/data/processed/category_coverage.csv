@@ -1,0 +1,43 @@
+bizlens_category,osm_tags,matched_pois,coverage_status
+cafe,"amenity:cafe, shop:coffee",1833,GOOD
+restaurant,amenity:restaurant,5507,GOOD
+bakery,shop:bakery,469,GOOD
+fast_food,amenity:fast_food,1927,GOOD
+juice_shop,"shop:juice, amenity:juice_bar",1,VERY_LOW
+grocery,"shop:grocery, shop:convenience",1134,GOOD
+supermarket,shop:supermarket,944,GOOD
+vegetable_fruit,shop:greengrocer,220,GOOD
+dairy,shop:dairy,174,GOOD
+meat,shop:butcher,122,GOOD
+pharmacy,"amenity:pharmacy, shop:pharmacy, shop:chemist, shop:medical_supply",1155,GOOD
+clinic,"amenity:clinic, amenity:doctors",4317,GOOD
+dentist,amenity:dentist,902,GOOD
+diagnostic,amenity:diagnostic_centre,0,NO_DATA
+optical,shop:optician,199,GOOD
+salon,shop:hairdresser,558,GOOD
+beauty_parlour,shop:beauty,305,GOOD
+spa,"leisure:spa, amenity:spa",1,VERY_LOW
+gym,"leisure:fitness_centre, amenity:gym",0,NO_DATA
+yoga,sport:yoga,0,NO_DATA
+sports_center,leisure:sports_centre,0,NO_DATA
+clothing,"shop:clothes, shop:fashion",1445,GOOD
+footwear,shop:shoes,230,GOOD
+mobile_store,"shop:mobile_phone, shop:electronics",642,GOOD
+electronics,"shop:electronics, shop:computer",465,GOOD
+furniture,shop:furniture,208,GOOD
+hardware,shop:hardware,306,GOOD
+electrical,shop:electrical,69,LOW
+plumbing,shop:plumbing,0,NO_DATA
+laundry,shop:laundry,95,LOW
+tuition,amenity:school,1100,GOOD
+computer_institute,"shop:computer, amenity:college",537,GOOD
+stationery,shop:stationery,215,GOOD
+petrol_pump,amenity:fuel,1663,GOOD
+car_service,"shop:car_repair, amenity:car_repair",236,GOOD
+bike_service,"shop:motorcycle, shop:motorcycle_repair",281,GOOD
+car_wash,amenity:car_wash,94,LOW
+pet_shop,shop:pet,79,LOW
+mobile_repair,shop:mobile_phone,320,GOOD
+courier,amenity:post_office,287,GOOD
+printing,"shop:copyshop, shop:printing",175,GOOD
+general_store,shop:general,263,GOOD
