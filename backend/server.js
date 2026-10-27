@@ -44,17 +44,32 @@ const app = express();
 // CORS
 // ============================================================
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "https://biz-lens-ai-mu.vercel.app",
+  "https://biz-lens-php5pa960-dikshas-projects-9dcd04f3.vercel.app"
+];
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://127.0.0.1:5173",
-    ],
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      console.error("CORS blocked origin:", origin);
+
+      return callback(
+        new Error("Origin not allowed by CORS")
+      );
+    },
 
     methods: [
       "GET",
       "POST",
       "PUT",
+      "PATCH",
       "DELETE",
       "OPTIONS",
     ],

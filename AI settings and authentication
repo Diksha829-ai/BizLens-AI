@@ -1,0 +1,26 @@
+ backend/controllers/analysisController.js     |   20 [32m+[m[31m-[m
+ backend/controllers/authController.js         |  132 [32m+[m[31m-[m
+ backend/middleware/authMiddleware.js          |   81 [32m+[m[31m-[m
+ backend/routes/authRoutes.js                  |    9 [32m+[m[31m-[m
+ backend/server.js                             |   11 [32m+[m[31m-[m
+ frontend/package-lock.json                    | 1643 [32m++++++++++[m[31m-[m
+ frontend/package.json                         |    4 [32m+[m[31m-[m
+ frontend/src/App.jsx                          |  109 [32m+[m[31m-[m
+ frontend/src/pages/Analysis.jsx               |  875 [32m++[m[31m----[m
+ frontend/src/pages/AnalysisPreview.jsx        |   17 [32m+[m[31m-[m
+ frontend/src/pages/Analysis_backup.jsx        | 1993 [32m+++++++++++++[m
+ frontend/src/pages/BusinessCategory.jsx       |  433 [32m++[m[31m-[m
+ frontend/src/pages/CompareBusinesses.jsx      | 1588 [32m++++++++++[m
+ frontend/src/pages/Dashboard.jsx              | 1531 [32m+++++[m[31m-----[m
+ frontend/src/pages/LocationSelection.jsx      |   14 [32m+[m[31m-[m
+ frontend/src/pages/SavedAnalyses.jsx          |    3 [32m+[m[31m-[m
+ frontend/src/pages/Settings.jsx               |  472 [32m+++[m
+ frontend/src/styles/Settings.css              |  562 [32m++++[m
+ frontend/src/styles/analysis-preview.css      |  760 [32m+++[m[31m--[m
+ frontend/src/styles/analysis.css              | 3873 [32m+++++++++++++++[m[31m----------[m
+ frontend/src/styles/business-category.css     |  787 [32m++++[m[31m-[m
+ frontend/src/styles/dashboard.css             |  178 [32m++[m
+ frontend/src/styles/location-selection.css    | 1291 [32m+++[m[31m------[m
+ frontend/src/styles/saved-analyses.css        |  559 [32m++[m[31m--[m
+ ml-service/data_pipeline/train_baseline_v2.py |  476 [32m+[m[31m--[m
+ 25 files changed, 12360 insertions(+), 5061 deletions(-)
