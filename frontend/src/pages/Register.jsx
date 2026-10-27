@@ -3,6 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 
 import "../styles/register.css";
 
+const API_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -15,7 +18,7 @@ function Register() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/auth/register",
+        `${API_URL}/api/auth/register`,
         {
           method: "POST",
           headers: {

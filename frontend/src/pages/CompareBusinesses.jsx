@@ -1,6 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
+// Backend API base URL (production via VITE_API_URL, local fallback for development)
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 const CompareBusinesses = () => {
   const navigate = useNavigate();
 
@@ -29,7 +32,7 @@ const CompareBusinesses = () => {
         setError("");
 
         const response = await fetch(
-          "http://localhost:5000/api/analysis",
+          `${API_URL}/api/analysis`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -146,7 +149,7 @@ const CompareBusinesses = () => {
         const results = await Promise.all(
           selectedIds.map(async (id) => {
             const response = await fetch(
-              `http://localhost:5000/api/analysis/${id}`,
+              `${API_URL}/api/analysis/${id}`,
               {
                 headers: {
                   Authorization: `Bearer ${token}`,

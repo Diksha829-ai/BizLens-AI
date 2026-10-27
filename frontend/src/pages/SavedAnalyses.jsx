@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./../styles/saved-analyses.css";
 
+const API_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 function SavedAnalyses() {
   const navigate = useNavigate();
 
@@ -22,7 +25,7 @@ function SavedAnalyses() {
       }
 
       const response = await fetch(
-        "http://localhost:5000/api/analysis",
+        `${API_URL}/api/analysis`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -67,7 +70,7 @@ function SavedAnalyses() {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        `http://localhost:5000/api/analysis/${id}`,
+        `${API_URL}/api/analysis/${id}`,
         {
           method: "DELETE",
           headers: {

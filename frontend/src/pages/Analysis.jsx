@@ -18,6 +18,9 @@ import L from "leaflet";
 
 import "../styles/analysis.css";
 
+// Backend API base URL (production via VITE_API_URL, local fallback for development)
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 // ============================================================
 // FIX LEAFLET MARKER ICON
 // ============================================================
@@ -164,7 +167,7 @@ function Analysis() {
         );
 
         const response = await fetch(
-          `http://localhost:5000/api/analysis/${savedId}`,
+          `${API_URL}/api/analysis/${savedId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -454,7 +457,7 @@ function Analysis() {
       // ------------------------------------------------------
 
       const response = await fetch(
-        "http://localhost:5000/api/analysis",
+        `${API_URL}/api/analysis`,
         {
           method: "POST",
 

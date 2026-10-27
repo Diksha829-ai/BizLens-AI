@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import "../styles/dashboard.css";
+
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:5000";
+
 function Dashboard() {
   const navigate = useNavigate();
 
@@ -54,14 +59,14 @@ function Dashboard() {
         setLoadingAnalyses(true);
         setAnalysisError("");
 
-        const response = await fetch(
-          "http://localhost:5000/api/analysis",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+const response = await fetch(
+  `${API_URL}/api/analysis`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+);
 
         const data = await response.json();
 
