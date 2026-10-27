@@ -10,8 +10,8 @@ const axios = require("axios");
 // 2. Broad daily-life business support
 // 3. Infrastructure / landmark support
 // 4. POST requests to avoid huge GET URLs
-// 5. Retry with exponential backoff
-// 6. Retry-After support
+// 5. Bounded retries with exponential backoff
+// 6. Retry-After support and total request deadline
 // 7. Multiple Overpass fallback servers
 // 8. In-memory TTL cache
 // 9. Bounded cache size
@@ -34,7 +34,6 @@ const axios = require("axios");
 //
 // ============================================================
 
-
 // ============================================================
 // OVERPASS SERVERS
 // ============================================================
@@ -45,16 +44,18 @@ const OVERPASS_ENDPOINTS = [
   "https://overpass.private.coffee/api/interpreter",
 ];
 
-
 // ============================================================
 // CONFIGURATION
 // ============================================================
 
 const REQUEST_TIMEOUT =
-  Number(process.env.OVERPASS_TIMEOUT || 60000);
+  Number(process.env.OVERPASS_TIMEOUT || 15000);
 
 const MAX_RETRIES_PER_ENDPOINT =
-  Number(process.env.OVERPASS_RETRIES || 2);
+  Number(process.env.OVERPASS_RETRIES || 1);
+
+const OVERPASS_TOTAL_TIMEOUT =
+  Number(process.env.OVERPASS_TOTAL_TIMEOUT || 45000);
 
 const BASE_RETRY_DELAY =
   Number(process.env.OVERPASS_RETRY_DELAY || 1500);
@@ -75,13 +76,11 @@ const USER_AGENT =
   process.env.OVERPASS_USER_AGENT ||
   "BizLens-AI/1.0 (Final Year Project; OpenStreetMap data analysis)";
 
-
 // ============================================================
 // IN-MEMORY CACHE
 // ============================================================
 
 const cache = new Map();
-
 
 // ============================================================
 // LOGGING
@@ -99,7 +98,6 @@ function logError(message, ...args) {
   console.error(`[OverpassService] ${message}`, ...args);
 }
 
-
 // ============================================================
 // BASIC HELPERS
 // ============================================================
@@ -114,17 +112,14 @@ function cleanString(value) {
     .toLowerCase();
 }
 
-
 function normalizeText(value) {
   return cleanString(value)
     .replace(/\s+/g, " ");
 }
 
-
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
-
 
 // ============================================================
 // CACHE HELPERS
@@ -145,7 +140,6 @@ function getCache(key) {
   return entry.value;
 }
 
-
 function setCache(key, value) {
   if (cache.size >= MAX_CACHE_ENTRIES) {
     const oldestKey = cache.keys().next().value;
@@ -161,11 +155,9 @@ function setCache(key, value) {
   });
 }
 
-
 function clearCache() {
   cache.clear();
 }
-
 
 // ============================================================
 // CACHE KEY
@@ -184,7 +176,6 @@ function createCacheKey(
   return `${lat}:${lon}:${radius}:${category}`;
 }
 
-
 // ============================================================
 // BUSINESS CATEGORY DEFINITIONS
 // ============================================================
@@ -195,7 +186,6 @@ function createCacheKey(
 // ============================================================
 
 const CATEGORY_DEFINITIONS = {
-
   restaurant: [
     `nwr["amenity"="restaurant"](around:{radius},{lat},{lon});`,
     `nwr["amenity"="fast_food"](around:{radius},{lat},{lon});`,
@@ -367,171 +357,131 @@ const CATEGORY_DEFINITIONS = {
 
   pet: [
     `nwr["shop"="pet"](around:{radius},{lat},{lon});`,
-    `nwr["amenity"="veterinary"](around:{radius},{lat},{lon});`,
+  ],
+    florist: [
+    `nwr["shop"="florist"](around:{radius},{lat},{lon});`,
   ],
 
-  childcare: [
-    `nwr["amenity"="childcare"](around:{radius},{lat},{lon});`,
-    `nwr["amenity"="kindergarten"](around:{radius},{lat},{lon});`,
+  department_store: [
+    `nwr["shop"="department_store"](around:{radius},{lat},{lon});`,
   ],
 
-  generic_shops: [
+  convenience: [
+    `nwr["shop"="convenience"](around:{radius},{lat},{lon});`,
+  ],
+
+  general: [
     `nwr["shop"](around:{radius},{lat},{lon});`,
-  ],
-
-  generic_amenities: [
-    `nwr["amenity"](around:{radius},{lat},{lon});`,
-  ],
-
-  generic_tourism: [
-    `nwr["tourism"](around:{radius},{lat},{lon});`,
-  ],
-
-  generic_leisure: [
-    `nwr["leisure"](around:{radius},{lat},{lon});`,
+    `nwr["amenity"~"restaurant|cafe|fast_food|bank|pharmacy|hospital|clinic|school|college|university|fuel|marketplace|atm"](around:{radius},{lat},{lon});`,
+    `nwr["office"](around:{radius},{lat},{lon});`,
+    `nwr["craft"](around:{radius},{lat},{lon});`,
+    `nwr["tourism"~"hotel|hostel|guest_house|motel|attraction|museum|gallery"](around:{radius},{lat},{lon});`,
+    `nwr["leisure"~"park|garden|fitness_centre|sports_centre|stadium"](around:{radius},{lat},{lon});`,
   ],
 };
 
-
 // ============================================================
-// BUSINESS CATEGORY ALIASES
+// CATEGORY ALIASES
 // ============================================================
 
 const CATEGORY_ALIASES = {
-
-  restaurant: "restaurant",
-  restaurants: "restaurant",
   food: "restaurant",
-  fastfood: "restaurant",
-
-  cafe: "cafe",
+  restaurants: "restaurant",
+  dining: "restaurant",
+  eating: "restaurant",
   coffee: "cafe",
   coffee_shop: "cafe",
-
-  bakery: "bakery",
-
-  grocery: "grocery",
+  cafes: "cafe",
+  grocery_store: "grocery",
   supermarket: "grocery",
-  convenience: "grocery",
-
-  pharmacy: "pharmacy",
-  chemist: "pharmacy",
+  supermarkets: "grocery",
+  groceries: "grocery",
   medical_store: "pharmacy",
-  medical_shop: "pharmacy",
-
+  chemist: "pharmacy",
+  chemists: "pharmacy",
   hospital: "medical",
+  hospitals: "medical",
   clinic: "medical",
+  clinics: "medical",
   doctor: "medical",
   doctors: "medical",
-  dentist: "medical",
   healthcare: "medical",
-
-  salon: "salon",
-  beauty: "salon",
+  beauty_salon: "salon",
   hairdresser: "salon",
-
-  gym: "gym",
   fitness: "gym",
-
-  hotel: "hotel",
-  hostel: "hotel",
-
-  clothing: "clothing",
-  clothes: "clothing",
-  fashion: "clothing",
-
-  bank: "bank",
-  atm: "atm",
-
-  petrol: "petrol",
-  fuel: "fuel",
-
-  market: "marketplace",
-  marketplace: "marketplace",
-
+  fitness_center: "gym",
+  fitness_centre: "gym",
+  hotels: "hotel",
+  accommodation: "hotel",
+  petrol: "fuel",
+  petrol_pump: "fuel",
+  gas_station: "fuel",
+  gas: "fuel",
   school: "school",
   schools: "school",
-
-  college: "college",
-
   university: "university",
-
-  office: "office",
+  universities: "university",
+  colleges: "college",
   offices: "office",
-
-  park: "park",
-  garden: "park",
-
-  sports: "sports",
-  stadium: "sports",
-
-  transport: "transport",
+  parks: "park",
+  sports_facility: "sports",
   bus: "transport",
   railway: "transport",
-
+  train_station: "transport",
+  public_transport: "transport",
+  tourist_attraction: "tourist",
   tourism: "tourist",
-  tourist: "tourist",
-
+  place_of_worship: "religious",
   worship: "religious",
-  religious: "religious",
-
-  parking: "parking",
-
-  electronics: "electronics",
-  mobile: "electronics",
-
-  furniture: "furniture",
-
-  hardware: "hardware",
-
-  books: "books",
+  parking_lot: "parking",
+  electronics_store: "electronics",
+  mobile_shop: "electronics",
+  furniture_store: "furniture",
+  hardware_store: "hardware",
   bookstore: "books",
-
-  jewellery: "jewellery",
+  bookshop: "books",
   jewelry: "jewellery",
-
-  car: "car",
+  jeweller: "jewellery",
+  jewellery_store: "jewellery",
   automobile: "car",
-  mechanic: "car",
-
-  laundry: "laundry",
-
-  pet: "pet",
-  veterinary: "pet",
-
-  childcare: "childcare",
-  daycare: "childcare",
+  automotive: "car",
+  car_repair: "car",
+  laundry_service: "laundry",
+  pet_shop: "pet",
+  flower_shop: "florist",
+  flowers: "florist",
+  department: "department_store",
+  general_store: "convenience",
+  shops: "general",
+  all: "general",
+  business: "general",
+  businesses: "general",
 };
 
-
 // ============================================================
-// NORMALIZE CATEGORY
+// NORMALIZE REQUESTED CATEGORY
 // ============================================================
 
 function normalizeRequestedCategory(category) {
+  const normalized = normalizeText(category)
+    .replace(/[\s-]+/g, "_");
 
-  if (!category) {
+  if (!normalized) {
     return null;
   }
 
-  const normalized =
-    cleanString(category)
-      .replace(/\s+/g, "_")
-      .replace(/-/g, "_");
+  if (CATEGORY_DEFINITIONS[normalized]) {
+    return normalized;
+  }
 
-  return CATEGORY_ALIASES[normalized] ||
-    (CATEGORY_DEFINITIONS[normalized]
-      ? normalized
-      : null);
+  return CATEGORY_ALIASES[normalized] || null;
 }
 
-
 // ============================================================
-// BUSINESS TYPE NORMALIZATION
+// NORMALIZE BUSINESS TYPE
 // ============================================================
 
 function normalizeBusinessType(tags = {}) {
-
   const shop = cleanString(tags.shop);
   const amenity = cleanString(tags.amenity);
   const leisure = cleanString(tags.leisure);
@@ -545,232 +495,101 @@ function normalizeBusinessType(tags = {}) {
   const highway = cleanString(tags.highway);
   const railway = cleanString(tags.railway);
 
-  // Food
-  if (
-    amenity === "restaurant" ||
-    amenity === "fast_food" ||
-    amenity === "food_court"
-  ) {
-    return "restaurant";
-  }
-
-  if (
-    amenity === "cafe" ||
-    shop === "coffee"
-  ) {
-    return "cafe";
-  }
-
-  if (shop === "bakery") {
-    return "bakery";
-  }
-
-  // Pharmacy
-  if (
-    shop === "pharmacy" ||
-    shop === "chemist" ||
-    shop === "medical" ||
-    shop === "medical_supply" ||
-    shop === "drugstore" ||
-    amenity === "pharmacy" ||
-    healthcare === "pharmacy"
-  ) {
-    return "pharmacy";
-  }
-
-  // Medical
-  if (
-    amenity === "hospital" ||
-    healthcare === "hospital"
-  ) {
-    return "hospital";
-  }
-
-  if (
-    amenity === "clinic" ||
-    amenity === "doctors" ||
-    amenity === "dentist" ||
-    healthcare === "clinic" ||
-    healthcare === "doctor" ||
-    healthcare === "dentist"
-  ) {
-    return "clinic";
-  }
-
-  // Fitness
-  if (
-    leisure === "fitness_centre" ||
-    leisure === "sports_centre" ||
-    sport === "fitness" ||
-    sport === "bodybuilding" ||
-    sport === "weightlifting"
-  ) {
-    return "gym";
-  }
-
-  // Salon
-  if (
-    shop === "hairdresser" ||
-    shop === "beauty" ||
-    shop === "cosmetics"
-  ) {
-    return "salon";
-  }
-
-  // Grocery
-  if (
-    shop === "supermarket" ||
-    shop === "convenience" ||
-    shop === "grocery" ||
-    shop === "greengrocer"
-  ) {
-    return "grocery";
-  }
-
-  // Clothing
-  if (
-    shop === "clothes" ||
-    shop === "fashion" ||
-    shop === "boutique"
-  ) {
-    return "clothing";
-  }
-
-  // Hotels
-  if (
-    tourism === "hotel" ||
-    tourism === "hostel" ||
-    tourism === "guest_house" ||
-    tourism === "motel"
-  ) {
-    return "hotel";
-  }
-
-  // Education
-  if (
-    amenity === "school" ||
-    amenity === "kindergarten"
-  ) {
-    return "school";
-  }
-
-  if (amenity === "college") {
-    return "college";
-  }
-
-  if (amenity === "university") {
-    return "university";
-  }
-
-  // Markets
-  if (
-    amenity === "marketplace" ||
-    shop === "market"
-  ) {
-    return "market";
-  }
-
-  // Banks
-  if (amenity === "bank") {
-    return "bank";
-  }
-
-  if (amenity === "atm") {
-    return "atm";
-  }
-
-  // Fuel
-  if (amenity === "fuel") {
-    return "fuel";
-  }
-
-  // Parks
-  if (
-    leisure === "park" ||
-    leisure === "garden" ||
-    leisure === "nature_reserve"
-  ) {
-    return "park";
-  }
-
-  // Sports
-  if (
-    leisure === "stadium" ||
-    leisure === "pitch" ||
-    leisure === "track" ||
-    sport
-  ) {
-    return "sports";
-  }
-
-  // Office
-  if (
-    office ||
-    building === "office"
-  ) {
-    return "office";
-  }
-
-  // Transport
-  if (
-    highway === "bus_stop" ||
-    highway === "platform" ||
-    amenity === "bus_station" ||
-    amenity === "taxi" ||
-    railway === "station" ||
-    railway === "halt" ||
-    railway === "tram_stop" ||
-    railway === "subway_entrance"
-  ) {
-    return "transport";
-  }
-
-  // Parking
-  if (amenity === "parking") {
-    return "parking";
-  }
-
-  // Tourism
-  if (tourism) {
-    return "tourism";
-  }
-
-  // Religious
-  if (amenity === "place_of_worship") {
-    return "religious";
-  }
-
-  // Other shops
   if (shop) {
-    return "shop";
+    const shopMap = {
+      supermarket: "grocery",
+      convenience: "grocery",
+      grocery: "grocery",
+      greengrocer: "grocery",
+      clothes: "clothing",
+      fashion: "clothing",
+      boutique: "clothing",
+      pharmacy: "pharmacy",
+      chemist: "pharmacy",
+      medical: "pharmacy",
+      hairdresser: "salon",
+      beauty: "salon",
+      cosmetics: "salon",
+      electronics: "electronics",
+      mobile_phone: "electronics",
+      computer: "electronics",
+      furniture: "furniture",
+      hardware: "hardware",
+      books: "books",
+      jewelry: "jewellery",
+      jewellery: "jewellery",
+      car: "car",
+      car_repair: "car",
+      tyres: "car",
+      laundry: "laundry",
+      pet: "pet",
+      florist: "florist",
+      department_store: "department_store",
+      bakery: "bakery",
+      coffee: "cafe",
+    };
+
+    return shopMap[shop] || shop.replace(/_/g, " ");
   }
 
-  // Craft
+  if (amenity) {
+    const amenityMap = {
+      restaurant: "restaurant",
+      fast_food: "restaurant",
+      food_court: "restaurant",
+      cafe: "cafe",
+      pharmacy: "pharmacy",
+      hospital: "medical",
+      clinic: "medical",
+      doctors: "medical",
+      dentist: "medical",
+      bank: "bank",
+      atm: "atm",
+      fuel: "fuel",
+      marketplace: "marketplace",
+      school: "school",
+      kindergarten: "school",
+      college: "college",
+      university: "university",
+      bus_station: "transport",
+      taxi: "transport",
+      parking: "parking",
+      place_of_worship: "religious",
+    };
+
+    return amenityMap[amenity] || amenity.replace(/_/g, " ");
+  }
+
+  if (healthcare) {
+    return healthcare.replace(/_/g, " ");
+  }
+
+  if (office) {
+    return `office: ${office.replace(/_/g, " ")}`;
+  }
+
   if (craft) {
-    return "craft";
+    return `craft: ${craft.replace(/_/g, " ")}`;
   }
 
-  // Residential
-  if (
-    [
-      "residential",
-      "apartments",
-      "house",
-      "detached",
-      "semidetached_house",
-      "terrace",
-      "dormitory",
-    ].includes(building)
-  ) {
-    return "residential";
+  if (tourism) {
+    return tourism.replace(/_/g, " ");
   }
 
-  if (highway) {
-    return "road";
+  if (leisure) {
+    return leisure.replace(/_/g, " ");
+  }
+
+  if (sport) {
+    return sport.replace(/_/g, " ");
   }
 
   if (railway) {
-    return "railway";
+    return "transport";
+  }
+
+  if (highway) {
+    return "transport";
   }
 
   if (building) {
@@ -778,19 +597,17 @@ function normalizeBusinessType(tags = {}) {
   }
 
   if (landuse) {
-    return "landuse";
+    return landuse.replace(/_/g, " ");
   }
 
   return "unknown";
 }
 
-
 // ============================================================
-// BUSINESS DETECTION
+// IS BUSINESS
 // ============================================================
 
 function isBusiness(tags = {}) {
-
   const shop = cleanString(tags.shop);
   const amenity = cleanString(tags.amenity);
   const office = cleanString(tags.office);
@@ -799,82 +616,50 @@ function isBusiness(tags = {}) {
   const healthcare = cleanString(tags.healthcare);
   const leisure = cleanString(tags.leisure);
 
-  if (shop || office || craft || tourism || healthcare) {
-    return true;
-  }
-
-  if (
-    [
-      "restaurant",
-      "cafe",
-      "fast_food",
-      "food_court",
-      "pharmacy",
-      "hospital",
-      "clinic",
-      "doctors",
-      "dentist",
-      "bank",
-      "atm",
-      "fuel",
-      "marketplace",
-      "veterinary",
-    ].includes(amenity)
-  ) {
-    return true;
-  }
-
-  if (
-    [
-      "fitness_centre",
-      "sports_centre",
-    ].includes(leisure)
-  ) {
-    return true;
-  }
-
-  return false;
+  return Boolean(
+    shop ||
+    office ||
+    craft ||
+    healthcare ||
+    amenity ||
+    (
+      tourism &&
+      !["viewpoint", "information"].includes(tourism)
+    ) ||
+    (
+      leisure &&
+      [
+        "fitness_centre",
+        "sports_centre",
+        "stadium",
+      ].includes(leisure)
+    )
+  );
 }
 
-
 // ============================================================
-// INFRASTRUCTURE
+// IS INFRASTRUCTURE
 // ============================================================
 
 function isInfrastructure(tags = {}) {
-
   const highway = cleanString(tags.highway);
   const building = cleanString(tags.building);
   const railway = cleanString(tags.railway);
   const landuse = cleanString(tags.landuse);
 
-  if (highway || railway || landuse) {
-    return true;
-  }
-
-  if (
-    [
-      "yes",
-      "residential",
-      "house",
-      "apartments",
-      "detached",
-      "semidetached_house",
-      "terrace",
-      "commercial",
-      "industrial",
-      "office",
-    ].includes(building)
-  ) {
-    return true;
-  }
-
-  return false;
+  return Boolean(
+    highway ||
+    railway ||
+    building ||
+    landuse ||
+    tags.public_transport ||
+    tags.crossing ||
+    tags.cycleway
+  );
 }
 
-
 // ============================================================
-// OBJECT TYPE
+// DETERMINE OBJECT TYPE
 // ============================================================
 
 function determineObjectType(tags = {}) {
@@ -885,70 +670,22 @@ function determineObjectType(tags = {}) {
   const crossing = cleanString(tags.crossing);
   const cycleway = cleanString(tags.cycleway);
 
-  // Keep businesses classified as businesses
   if (isBusiness(tags)) {
     return "business";
   }
 
-  // Parking
   if (
-    amenity === "parking" ||
-    tags.parking
-  ) {
-    return "parking";
-  }
-
-  // Public transport
-  if (
+    highway ||
+    railway ||
     publicTransport ||
-    highway === "bus_stop" ||
-    amenity === "bus_station" ||
-    amenity === "taxi" ||
-    [
-      "station",
-      "halt",
-      "tram_stop",
-      "subway_entrance",
-    ].includes(railway)
+    crossing ||
+    cycleway
   ) {
     return "transport";
   }
 
-  // Pedestrian crossings
-  if (
-    highway === "crossing" ||
-    crossing
-  ) {
-    return "crossing";
-  }
-
-  // Cycle infrastructure
-  if (
-    highway === "cycleway" ||
-    cycleway
-  ) {
-    return "cycleway";
-  }
-
-  // Footpaths and pedestrian areas
-  if (
-    [
-      "footway",
-      "pedestrian",
-      "steps",
-      "path",
-    ].includes(highway)
-  ) {
-    return "walkable";
-  }
-
-  // General roads
-  if (highway) {
-    return "road";
-  }
-
-  if (railway) {
-    return "railway";
+  if (amenity) {
+    return "amenity";
   }
 
   if (tags.building) {
@@ -967,15 +704,13 @@ function determineObjectType(tags = {}) {
     return "tourism";
   }
 
-  return "place";
+  return "other";
 }
-
 // ============================================================
-// ADDRESS
+// EXTRACT ADDRESS
 // ============================================================
 
 function extractAddress(tags = {}) {
-
   const parts = [];
 
   const fields = [
@@ -987,32 +722,38 @@ function extractAddress(tags = {}) {
     "addr:district",
     "addr:state",
     "addr:postcode",
+    "addr:country",
   ];
 
   for (const field of fields) {
-    if (tags[field]) {
-      parts.push(tags[field]);
+    const value = tags[field];
+
+    if (value && String(value).trim()) {
+      parts.push(String(value).trim());
     }
   }
 
   if (parts.length > 0) {
-    return parts.join(", ");
+    return [...new Set(parts)].join(", ");
   }
 
-  return tags["addr:full"] || null;
+  return (
+    tags["addr:full"] ||
+    tags.address ||
+    tags["contact:address"] ||
+    ""
+  );
 }
 
+// ============================================================
+// EXTRACT COORDINATES
+// ============================================================
 
-// ============================================================
-// COORDINATES
-// ============================================================
-function extractCoordinates(element) {
-  // 1. Direct coordinates (OSM nodes)
+function extractCoordinates(element = {}) {
+  // Nodes normally contain lat/lon directly.
   if (
     Number.isFinite(Number(element.lat)) &&
-    Number.isFinite(Number(element.lon)) &&
-    element.lat != null &&
-    element.lon != null
+    Number.isFinite(Number(element.lon))
   ) {
     return {
       lat: Number(element.lat),
@@ -1020,10 +761,11 @@ function extractCoordinates(element) {
     };
   }
 
-  // 2. Center coordinates (OSM ways and relations)
+  // Ways and relations may contain a center.
   if (
-    element.center?.lat != null &&
-    element.center?.lon != null
+    element.center &&
+    Number.isFinite(Number(element.center.lat)) &&
+    Number.isFinite(Number(element.center.lon))
   ) {
     return {
       lat: Number(element.center.lat),
@@ -1031,15 +773,13 @@ function extractCoordinates(element) {
     };
   }
 
-  // 3. Geometry coordinates (fallback)
+  // Some responses include geometry instead of center.
   if (
     Array.isArray(element.geometry) &&
     element.geometry.length > 0
   ) {
     const validPoints = element.geometry.filter(
-      (point) =>
-        point.lat != null &&
-        point.lon != null &&
+      point =>
         Number.isFinite(Number(point.lat)) &&
         Number.isFinite(Number(point.lon))
     );
@@ -1061,315 +801,275 @@ function extractCoordinates(element) {
     }
   }
 
-  return null;
+  return {
+    lat: null,
+    lon: null,
+  };
 }
 
 // ============================================================
-// NORMALIZE ELEMENT
+// NORMALIZE OSM ELEMENT
 // ============================================================
 
-function normalizeElement(element) {
+function normalizeElement(element = {}) {
+  const tags = element.tags || {};
 
-  if (
-    !element ||
-    !element.type ||
-    element.id === undefined
-  ) {
-    return null;
-  }
+  const coordinates = extractCoordinates(element);
 
-  const tags =
-    element.tags || {};
-
- const coordinates = extractCoordinates(element);
-
-if (!coordinates) {
-  return null;
-}
-
-const latitude = coordinates.lat;
-const longitude = coordinates.lon;
-
- if (
-  !Number.isFinite(latitude) ||
-  !Number.isFinite(longitude)
-) {
-  return null;
-}
-
-  const businessType =
-    normalizeBusinessType(tags);
-
-  const business =
-    isBusiness(tags);
+  const latitude = coordinates.lat;
+  const longitude = coordinates.lon;
 
   const name =
     tags.name ||
     tags["name:en"] ||
-    tags["name:local"] ||
-    "Unnamed place";
+    tags["official_name"] ||
+    tags["brand"] ||
+    tags["operator"] ||
+    "Unnamed location";
+
+  const businessType = normalizeBusinessType(tags);
+
+  const business = isBusiness(tags);
+
+  const infrastructure = isInfrastructure(tags);
+
+  const address = extractAddress(tags);
+
+  const objectType = determineObjectType(tags);
+
+  const id =
+    element.id !== undefined && element.id !== null
+      ? `osm-${element.type || "element"}-${element.id}`
+      : [
+          "osm",
+          name,
+          latitude,
+          longitude,
+        ].join("-");
 
   return {
+    id,
+    osmId: element.id ?? null,
+    osmType: element.type || "unknown",
 
-    id:
-      `${element.type}/${element.id}`,
+    name: String(name).trim(),
 
-    osmId:
-      element.id,
+    type: businessType,
+    category: businessType,
 
-    osmType:
-      element.type,
+    objectType,
+    isBusiness: business,
+    isInfrastructure: infrastructure,
 
     latitude,
-
     longitude,
+    lat: latitude,
+    lon: longitude,
 
-    name,
+    coordinates:
+      latitude !== null && longitude !== null
+        ? {
+            lat: latitude,
+            lon: longitude,
+          }
+        : null,
 
-    normalizedName:
-      normalizeText(name),
-
-    category:
-      businessType,
-
-    businessType,
-
-    objectType:
-      determineObjectType(tags),
-
-    isBusiness:
-      business,
-
-    isInfrastructure:
-      isInfrastructure(tags),
-
-    shop:
-      tags.shop || null,
-
-    amenity:
-      tags.amenity || null,
-
-    healthcare:
-      tags.healthcare || null,
-
-    office:
-      tags.office || null,
-
-    leisure:
-      tags.leisure || null,
-
-    sport:
-      tags.sport || null,
-
-    tourism:
-      tags.tourism || null,
-
-    craft:
-      tags.craft || null,
-
-    building:
-      tags.building || null,
-
-    landuse:
-      tags.landuse || null,
-
-    highway:
-  tags.highway || null,
-
-railway:
-  tags.railway || null,
-
-public_transport:
-  tags.public_transport || null,
-
-crossing:
-  tags.crossing || null,
-
-cycleway:
-  tags.cycleway || null,
-
-bicycle:
-  tags.bicycle || null,
-
-bus:
-  tags.bus || null,
-
-park_ride:
-  tags.park_ride || null,
-
-    address:
-      extractAddress(tags),
-
-    street:
-      tags["addr:street"] || null,
-
-    suburb:
-      tags["addr:suburb"] ||
-      tags["addr:neighbourhood"] ||
-      null,
+    address,
 
     city:
-      tags["addr:city"] || null,
+      tags["addr:city"] ||
+      tags["addr:town"] ||
+      tags["addr:village"] ||
+      "",
 
-    postcode:
-      tags["addr:postcode"] || null,
+    postcode: tags["addr:postcode"] || "",
 
     phone:
       tags.phone ||
       tags["contact:phone"] ||
-      null,
+      "",
 
     website:
       tags.website ||
       tags["contact:website"] ||
-      null,
+      "",
 
     email:
       tags.email ||
       tags["contact:email"] ||
-      null,
+      "",
 
     openingHours:
-      tags.opening_hours ||
-      null,
-
-    operator:
-      tags.operator ||
-      null,
+      tags.opening_hours || "",
 
     brand:
-      tags.brand ||
-      null,
+      tags.brand || "",
 
-    wheelchair:
-      tags.wheelchair ||
-      null,
+    operator:
+      tags.operator || "",
 
-    parking:
-      tags.parking ||
-      null,
+    source: "OpenStreetMap",
 
-    internetAccess:
-      tags.internet_access ||
-      null,
+    tags: { ...tags },
 
-    cuisine:
-      tags.cuisine ||
-      null,
-
-    capacity:
-      tags.capacity ||
-      null,
-
-    osmVersion:
-      element.version ??
-      null,
-
-    osmTimestamp:
-      element.timestamp ??
-      null,
-
-    tags,
+    raw: {
+      id: element.id ?? null,
+      type: element.type || "unknown",
+    },
   };
 }
 
-
 // ============================================================
-// DEDUPLICATION
+// NORMALIZE RESULTS
 // ============================================================
 
-function deduplicatePlaces(places = []) {
+function normalizeResults(elements = []) {
+  if (!Array.isArray(elements)) {
+    return [];
+  }
 
-  const unique =
-    new Map();
+  const places = [];
 
-  for (const place of places) {
+  for (const element of elements) {
+    try {
+      if (!element || typeof element !== "object") {
+        continue;
+      }
 
-    if (!place) {
-      continue;
-    }
+      const normalized = normalizeElement(element);
 
-    if (!unique.has(place.id)) {
-      unique.set(
-        place.id,
-        place
+      if (
+        normalized.latitude === null ||
+        normalized.longitude === null
+      ) {
+        continue;
+      }
+
+      if (
+        !Number.isFinite(normalized.latitude) ||
+        !Number.isFinite(normalized.longitude)
+      ) {
+        continue;
+      }
+
+      if (
+        normalized.latitude < -90 ||
+        normalized.latitude > 90 ||
+        normalized.longitude < -180 ||
+        normalized.longitude > 180
+      ) {
+        continue;
+      }
+
+      places.push(normalized);
+    } catch (error) {
+      logWarn(
+        "Skipping an invalid OSM element:",
+        error.message
       );
     }
   }
 
-  return Array.from(
-    unique.values()
-  );
+  return deduplicatePlaces(places);
 }
 
+// ============================================================
+// DEDUPLICATE PLACES
+// ============================================================
+
+function deduplicatePlaces(places = []) {
+  const unique = new Map();
+
+  for (const place of places) {
+    if (!place) {
+      continue;
+    }
+
+    const osmKey =
+      place.osmId !== null &&
+      place.osmId !== undefined
+        ? `${place.osmType}-${place.osmId}`
+        : null;
+
+    const name = normalizeText(place.name);
+
+    const lat = Number(place.latitude);
+    const lon = Number(place.longitude);
+
+    const coordinateKey =
+      Number.isFinite(lat) && Number.isFinite(lon)
+        ? `${lat.toFixed(5)},${lon.toFixed(5)}`
+        : "";
+
+    const key =
+      osmKey ||
+      `${name}:${coordinateKey}`;
+
+    if (!unique.has(key)) {
+      unique.set(key, place);
+    }
+  }
+
+  return Array.from(unique.values());
+}
 
 // ============================================================
 // CATEGORY COUNTS
 // ============================================================
 
 function calculateCategoryCounts(places = []) {
-
   const counts = {};
 
   for (const place of places) {
-
     const category =
       place.category ||
+      place.type ||
       "unknown";
 
-    counts[category] =
-      (counts[category] || 0) + 1;
+    counts[category] = (counts[category] || 0) + 1;
   }
 
   return counts;
 }
-
 
 // ============================================================
 // BUSINESS CATEGORY COUNTS
 // ============================================================
 
 function calculateBusinessCategoryCounts(places = []) {
-
   const counts = {};
 
   for (const place of places) {
-
     if (!place.isBusiness) {
       continue;
     }
 
     const category =
-      place.businessType ||
+      place.category ||
+      place.type ||
       "unknown";
 
-    counts[category] =
-      (counts[category] || 0) + 1;
+    counts[category] = (counts[category] || 0) + 1;
   }
 
   return counts;
 }
 
-
 // ============================================================
-// DATA QUALITY
+// DATA QUALITY STATISTICS
 // ============================================================
 
 function calculateDataQuality(places = []) {
-
-  const total =
-    places.length;
+  const total = places.length;
 
   const businesses =
-    places.filter(
-      place => place.isBusiness
-    ).length;
+    places.filter(place => place.isBusiness).length;
 
   const named =
     places.filter(
       place =>
         place.name &&
-        place.name !== "Unnamed place"
+        place.name !== "Unnamed location"
     ).length;
 
   const coordinates =
@@ -1379,131 +1079,46 @@ function calculateDataQuality(places = []) {
         Number.isFinite(place.longitude)
     ).length;
 
-  const buildings =
-    places.filter(
-      place =>
-        place.objectType === "building"
-    ).length;
-
-  const roads =
-    places.filter(
-      place =>
-        place.objectType === "road"
-    ).length;
-
-  const railways =
-    places.filter(
-      place =>
-        place.objectType === "railway"
-    ).length;
-
-  const landuse =
-    places.filter(
-      place =>
-        place.objectType === "landuse"
-    ).length;
-
   const infrastructure =
     places.filter(
-      place =>
-        place.isInfrastructure
+      place => place.isInfrastructure
     ).length;
 
-  const categories =
-    new Set(
-      places
-        .map(
-          place =>
-            place.category
-        )
-        .filter(
-          category =>
-            category &&
-            category !== "unknown"
-        )
-    );
-
-  let level =
-    "Very Low";
-
-  if (total >= 500) {
-    level = "High";
-  }
-  else if (total >= 250) {
-    level = "Good";
-  }
-  else if (total >= 100) {
-    level = "Moderate";
-  }
-  else if (total >= 25) {
-    level = "Low";
-  }
-
-  const coordinateCoverage =
-    total > 0
-      ? Number(
-          (
-            coordinates /
-            total *
-            100
-          ).toFixed(2)
-        )
-      : 0;
-
-  const nameCoverage =
-    total > 0
-      ? Number(
-          (
-            named /
-            total *
-            100
-          ).toFixed(2)
-        )
+  const percentage = (count, denominator) =>
+    denominator > 0
+      ? Number(((count / denominator) * 100).toFixed(2))
       : 0;
 
   return {
-
-    totalObjects:
-      total,
-
-    totalPlaces:
-      total,
-
+    total,
     businesses,
-
-    namedPlaces:
-      named,
-
-    coordinateComplete:
-      coordinates,
-
-    coordinateCoverage,
-
-    nameCoverage,
-
-    normalizedCategories:
-      categories.size,
-
-    buildings,
-
-    roads,
-
-    railways,
-
-    landuse,
-
+    named,
+    coordinates,
     infrastructure,
 
-    level,
+    namedCoverage: percentage(named, total),
 
-    recordCompleteness:
-      total > 0
-        ? 100
-        : 0,
+    coordinateCoverage: percentage(
+      coordinates,
+      total
+    ),
+
+    businessCoverage: percentage(
+      businesses,
+      total
+    ),
+
+    infrastructureCoverage: percentage(
+      infrastructure,
+      total
+    ),
+
+    source: "OpenStreetMap",
+
+    note:
+      "OpenStreetMap data is crowdsourced and may be incomplete.",
   };
 }
-
-
 // ============================================================
 // BUILD CATEGORY QUERY
 // ============================================================
@@ -1514,77 +1129,43 @@ function buildCategoryQuery(
   longitude,
   radiusInMeters
 ) {
-
   const normalizedCategory =
-    normalizeRequestedCategory(
-      category
-    );
+    normalizeRequestedCategory(category);
 
   if (!normalizedCategory) {
     throw new Error(
-      `Unsupported business category: ${category}`
+      `Unsupported category "${category}".`
     );
   }
+
+  const lat = Number(latitude);
+  const lon = Number(longitude);
+  const radius = Number(radiusInMeters);
 
   const definitions =
-    CATEGORY_DEFINITIONS[
-      normalizedCategory
-    ];
+    CATEGORY_DEFINITIONS[normalizedCategory];
 
-  if (
-    !definitions ||
-    definitions.length === 0
-  ) {
-    throw new Error(
-      `No Overpass query definition found for category: ${normalizedCategory}`
+  const fragments = definitions
+    .slice(0, MAX_CATEGORY_QUERIES)
+    .map(fragment =>
+      fragment
+        .replaceAll("{radius}", String(radius))
+        .replaceAll("{lat}", String(lat))
+        .replaceAll("{lon}", String(lon))
     );
-  }
-
-  const fragments =
-    definitions
-      .slice(0, MAX_CATEGORY_QUERIES)
-      .map(
-        fragment =>
-          fragment
-            .replace(
-              /\{radius\}/g,
-              String(radiusInMeters)
-            )
-            .replace(
-              /\{lat\}/g,
-              String(latitude)
-            )
-            .replace(
-              /\{lon\}/g,
-              String(longitude)
-            )
-      );
 
   return `
-[out:json][timeout:55];
-
+[out:json][timeout:25];
 (
-${fragments.join("\n")}
+  ${fragments.join("\n")}
 );
-
 out center tags;
 `;
 }
 
-
 // ============================================================
-// BUILD ALL-BUSINESS QUERY
+// BUILD MAIN QUERY
 // ============================================================
-//
-// IMPORTANT:
-// This intentionally does NOT query every possible OSM tag
-// in one massive request.
-//
-// Instead, a limited set of broad business queries is used.
-// Category-specific analysis should use getNearbyBusinessesByCategory().
-//
-// ============================================================
-
 
 function buildQuery(
   latitude,
@@ -1595,87 +1176,41 @@ function buildQuery(
   const lon = Number(longitude);
   const radius = Number(radiusInMeters);
 
-  if (
-    !Number.isFinite(lat) ||
-    !Number.isFinite(lon) ||
-    !Number.isFinite(radius) ||
-    lat < -90 ||
-    lat > 90 ||
-    lon < -180 ||
-    lon > 180 ||
-    radius <= 0
-  ) {
-    throw new Error(
-      "Invalid Overpass search parameters."
-    );
-  }
+  const includeInfrastructure =
+    String(
+      process.env.OVERPASS_INCLUDE_INFRASTRUCTURE || "false"
+    ).toLowerCase() === "true";
+
+  const businessQuery = `
+    nwr["shop"](around:${radius},${lat},${lon});
+    nwr["amenity"~"restaurant|cafe|fast_food|food_court|bank|atm|pharmacy|hospital|clinic|doctors|dentist|school|college|university|fuel|marketplace|bus_station|taxi|parking|place_of_worship|kindergarten"](around:${radius},${lat},${lon});
+    nwr["office"](around:${radius},${lat},${lon});
+    nwr["craft"](around:${radius},${lat},${lon});
+    nwr["healthcare"](around:${radius},${lat},${lon});
+    nwr["tourism"~"hotel|hostel|guest_house|motel|attraction|museum|gallery"](around:${radius},${lat},${lon});
+    nwr["leisure"~"park|garden|fitness_centre|sports_centre|stadium"](around:${radius},${lat},${lon});
+  `;
+
+  const infrastructureQuery = `
+    nwr["highway"~"bus_stop|crossing|traffic_signals"](around:${radius},${lat},${lon});
+    nwr["railway"~"station|halt|tram_stop|subway_entrance"](around:${radius},${lat},${lon});
+    nwr["public_transport"](around:${radius},${lat},${lon});
+    nwr["building"](around:${radius},${lat},${lon});
+    nwr["landuse"~"commercial|retail|industrial|residential"](around:${radius},${lat},${lon});
+  `;
 
   return `
-[out:json][timeout:55];
-
+[out:json][timeout:25];
 (
-  // --------------------------------------------------------
-  // BUSINESSES AND AMENITIES
-  // --------------------------------------------------------
-
-  nwr["shop"](around:${radius},${lat},${lon});
-  nwr["amenity"](around:${radius},${lat},${lon});
-  nwr["healthcare"](around:${radius},${lat},${lon});
-  nwr["office"](around:${radius},${lat},${lon});
-  nwr["craft"](around:${radius},${lat},${lon});
-  nwr["tourism"](around:${radius},${lat},${lon});
-  nwr["leisure"](around:${radius},${lat},${lon});
-  nwr["sport"](around:${radius},${lat},${lon});
-  nwr["education"](around:${radius},${lat},${lon});
-
-  // --------------------------------------------------------
-  // PUBLIC TRANSPORT
-  // --------------------------------------------------------
-
-  nwr["public_transport"](around:${radius},${lat},${lon});
-  nwr["highway"="bus_stop"](around:${radius},${lat},${lon});
-  nwr["amenity"="bus_station"](around:${radius},${lat},${lon});
-  nwr["amenity"="taxi"](around:${radius},${lat},${lon});
-
-  nwr["railway"="station"](around:${radius},${lat},${lon});
-  nwr["railway"="halt"](around:${radius},${lat},${lon});
-  nwr["railway"="tram_stop"](around:${radius},${lat},${lon});
-
-  // --------------------------------------------------------
-  // ROAD NETWORK
-  // --------------------------------------------------------
-
-  way["highway"](around:${radius},${lat},${lon});
-
-  // --------------------------------------------------------
-  // CROSSINGS AND CYCLEWAYS
-  // --------------------------------------------------------
-
-  nwr["highway"="crossing"](around:${radius},${lat},${lon});
-  nwr["crossing"](around:${radius},${lat},${lon});
-
-  way["cycleway"](around:${radius},${lat},${lon});
-
-  // --------------------------------------------------------
-  // PARKING
-  // --------------------------------------------------------
-
-  nwr["amenity"="parking"](around:${radius},${lat},${lon});
-  nwr["parking"](around:${radius},${lat},${lon});
-
-  // --------------------------------------------------------
-  // BUILDINGS AND LAND USE
-  // --------------------------------------------------------
-
-  nwr["building"](around:${radius},${lat},${lon});
-  nwr["landuse"](around:${radius},${lat},${lon});
+  ${businessQuery}
+  ${includeInfrastructure ? infrastructureQuery : ""}
 );
-
 out center tags;
 `;
 }
+
 // ============================================================
-// VALIDATION
+// INPUT VALIDATION
 // ============================================================
 
 function validateInput(
@@ -1683,67 +1218,52 @@ function validateInput(
   longitude,
   radiusInKm
 ) {
-
-  const lat =
-    Number(latitude);
-
-  const lon =
-    Number(longitude);
-
-  const radius =
-    Number(radiusInKm);
+  const lat = Number(latitude);
+  const lon = Number(longitude);
+  const radius = Number(radiusInKm);
 
   if (
     !Number.isFinite(lat) ||
-    !Number.isFinite(lon) ||
-    !Number.isFinite(radius)
-  ) {
-    throw new Error(
-      "Invalid latitude, longitude or radius."
-    );
-  }
-
-  if (
     lat < -90 ||
     lat > 90
   ) {
-    throw new Error(
-      "Latitude must be between -90 and 90."
-    );
+    throw new Error("Invalid latitude.");
   }
 
   if (
+    !Number.isFinite(lon) ||
     lon < -180 ||
     lon > 180
   ) {
-    throw new Error(
-      "Longitude must be between -180 and 180."
-    );
+    throw new Error("Invalid longitude.");
   }
 
   if (
-    radius <= 0 ||
-    radius > MAX_RADIUS_KM
+    !Number.isFinite(radius) ||
+    radius <= 0
   ) {
     throw new Error(
-      `Radius must be greater than 0 and less than or equal to ${MAX_RADIUS_KM} km.`
+      "Radius must be a positive number."
     );
   }
+
+  const safeRadius = Math.min(
+    radius,
+    MAX_RADIUS_KM
+  );
 
   return {
     latitude: lat,
     longitude: lon,
-    radiusInKm: radius,
+    radiusInKm: safeRadius,
   };
 }
 
-
 // ============================================================
-// RETRYABLE STATUS
+// RETRYABLE HTTP STATUS
 // ============================================================
 
 function isRetryableStatus(status) {
-
   return [
     408,
     425,
@@ -1752,116 +1272,91 @@ function isRetryableStatus(status) {
     502,
     503,
     504,
-  ].includes(status);
+  ].includes(Number(status));
 }
-
 
 // ============================================================
 // RETRY DELAY
 // ============================================================
 
-function calculateRetryDelay(
-  attempt,
-  error
-) {
-
+function calculateRetryDelay(error, attempt) {
   const retryAfter =
     error.response?.headers?.["retry-after"];
 
   if (retryAfter) {
+    const seconds = Number(retryAfter);
 
-    const seconds =
-      Number(retryAfter);
-
-    if (
-      Number.isFinite(seconds)
-    ) {
+    if (Number.isFinite(seconds)) {
       return Math.min(
         seconds * 1000,
-        30000
+        10000
+      );
+    }
+
+    const retryDate = Date.parse(retryAfter);
+
+    if (Number.isFinite(retryDate)) {
+      return Math.max(
+        0,
+        Math.min(retryDate - Date.now(), 10000)
       );
     }
   }
 
   const exponential =
     BASE_RETRY_DELAY *
-    Math.pow(2, attempt - 1);
+    Math.pow(2, Math.max(0, attempt - 1));
 
   const jitter =
-    Math.floor(
-      Math.random() * 500
-    );
+    Math.floor(Math.random() * 300);
 
   return Math.min(
     exponential + jitter,
-    30000
+    5000
   );
 }
 
-
 // ============================================================
-// REQUEST OVERPASS
-// ============================================================
-//
-// POST is intentional.
-// It avoids sending huge query strings through the URL.
-//
+// REQUEST ONE OVERPASS SERVER
 // ============================================================
 
-async function requestOverpass(
-  endpoint,
-  query
-) {
+async function requestOverpass(endpoint, query, timeoutMs) {
+  const response = await axios.post(
+    endpoint,
+    new URLSearchParams({
+      data: query,
+    }).toString(),
+    {
+      timeout: Math.max(1000, timeoutMs),
 
-  const response =
-    await axios.post(
-      endpoint,
-      new URLSearchParams({
-        data: query,
-      }).toString(),
-      {
-        timeout:
-          REQUEST_TIMEOUT,
+      headers: {
+        Accept: "application/json",
+        "Content-Type":
+          "application/x-www-form-urlencoded",
+        "User-Agent": USER_AGENT,
+      },
 
-        headers: {
-          Accept:
-            "application/json",
-
-          "Content-Type":
-            "application/x-www-form-urlencoded",
-
-          "User-Agent":
-            USER_AGENT,
-        },
-
-        validateStatus:
-          () => true,
-      }
-    );
+      validateStatus: () => true,
+    }
+  );
 
   if (
     response.status < 200 ||
     response.status >= 300
   ) {
+    const error = new Error(
+      `Overpass HTTP ${response.status}`
+    );
 
-    const error =
-      new Error(
-        `Overpass HTTP ${response.status}`
-      );
-
-    error.response =
-      response;
+    error.response = response;
 
     throw error;
   }
 
   if (
     !response.data ||
-    !Array.isArray(
-      response.data.elements
-    )
+    !Array.isArray(response.data.elements)
   ) {
-
     throw new Error(
       "Invalid response received from Overpass."
     );
@@ -1870,40 +1365,45 @@ async function requestOverpass(
   return response.data.elements;
 }
 
-
 // ============================================================
-// FETCH WITH RETRIES + FALLBACK
+// FETCH WITH RETRIES AND FALLBACK
 // ============================================================
 
-async function fetchOverpassData(
-  query
-) {
+async function fetchOverpassData(query) {
+  let lastError = null;
 
-  let lastError =
-    null;
+  const deadline =
+    Date.now() + OVERPASS_TOTAL_TIMEOUT;
 
-  for (
-    const endpoint of
-    OVERPASS_ENDPOINTS
-  ) {
-
+  for (const endpoint of OVERPASS_ENDPOINTS) {
     for (
       let attempt = 1;
       attempt <= MAX_RETRIES_PER_ENDPOINT;
       attempt++
     ) {
+      const remainingMs = deadline - Date.now();
+
+      if (remainingMs <= 0) {
+        throw new Error(
+          "Overpass request exceeded the total time limit."
+        );
+      }
+
+      const timeoutMs = Math.min(
+        REQUEST_TIMEOUT,
+        remainingMs
+      );
 
       try {
-
         logInfo(
           `Requesting ${endpoint} - attempt ${attempt}/${MAX_RETRIES_PER_ENDPOINT}`
         );
 
-        const elements =
-          await requestOverpass(
-            endpoint,
-            query
-          );
+        const elements = await requestOverpass(
+          endpoint,
+          query,
+          timeoutMs
+        );
 
         logInfo(
           `Received ${elements.length} raw OSM objects from ${endpoint}`
@@ -1914,19 +1414,13 @@ async function fetchOverpassData(
           endpoint,
           attempt,
         };
+      } catch (error) {
+        lastError = error;
 
-      }
-
-      catch (error) {
-
-        lastError =
-          error;
-
-        const status =
-          error.response?.status;
+        const status = error.response?.status;
 
         logWarn(
-          `Overpass failed. endpoint=${endpoint}, attempt=${attempt}, status=${status || "N/A"}, code=${error.code || "N/A"}`
+          `Overpass failed. endpoint=${endpoint}, attempt=${attempt}, status=${status || "N/A"}, code=${error.code || "N/A"}, message=${error.message}`
         );
 
         const retryable =
@@ -1934,63 +1428,29 @@ async function fetchOverpassData(
           isRetryableStatus(status);
 
         if (
-          !retryable
+          attempt < MAX_RETRIES_PER_ENDPOINT &&
+          retryable &&
+          Date.now() < deadline
         ) {
-          break;
-        }
-
-        if (
-          attempt <
-          MAX_RETRIES_PER_ENDPOINT
-        ) {
-
-          const delay =
-            calculateRetryDelay(
-              attempt,
-              error
-            );
-
-          logInfo(
-            `Retrying in ${delay}ms`
+          const delay = Math.min(
+            calculateRetryDelay(error, attempt),
+            Math.max(0, deadline - Date.now())
           );
 
           await sleep(delay);
+        } else {
+          break;
         }
       }
     }
-
-    logWarn(
-      `Switching to fallback Overpass server: ${endpoint}`
-    );
   }
 
-  throw (
-    lastError ||
-    new Error(
-      "Unable to retrieve data from Overpass."
-    )
+  throw lastError || new Error(
+    "All Overpass servers failed."
   );
 }
-
-
 // ============================================================
-// NORMALIZE RESULT
-// ============================================================
-
-function normalizeResults(
-  elements
-) {
-
-  return deduplicatePlaces(
-    elements
-      .map(normalizeElement)
-      .filter(Boolean)
-  );
-}
-
-
-// ============================================================
-// MAIN - ALL BUSINESSES
+// GET NEARBY BUSINESSES
 // ============================================================
 
 async function getNearbyBusinesses(
@@ -1998,13 +1458,11 @@ async function getNearbyBusinesses(
   longitude,
   radiusInKm
 ) {
-
-  const input =
-    validateInput(
-      latitude,
-      longitude,
-      radiusInKm
-    );
+  const input = validateInput(
+    latitude,
+    longitude,
+    radiusInKm
+  );
 
   const {
     latitude: lat,
@@ -2012,153 +1470,76 @@ async function getNearbyBusinesses(
     radiusInKm: radius,
   } = input;
 
-  const radiusInMeters =
-    Math.round(
-      radius * 1000
-    );
+  const radiusInMeters = Math.round(radius * 1000);
 
-  const cacheKey =
-    createCacheKey(
-      lat,
-      lon,
-      radius,
-      "all"
-    );
+  const cacheKey = createCacheKey(
+    lat,
+    lon,
+    radius,
+    "all"
+  );
 
-  const cached =
-    getCache(cacheKey);
+  const cached = getCache(cacheKey);
 
   if (cached) {
-
-    logInfo(
-      `Returning cached result for ${cacheKey}`
-    );
-
+    logInfo("Returning cached nearby businesses");
     return cached;
   }
 
-  logInfo(
-    `Searching OSM within ${radius} km (${radiusInMeters} meters)`
+  const query = buildQuery(
+    lat,
+    lon,
+    radiusInMeters
   );
 
-  const query =
-    buildQuery(
-      lat,
-      lon,
-      radiusInMeters
-    );
+  const result = await fetchOverpassData(query);
 
-  let result;
+  const places = normalizeResults(result.elements);
 
-  try {
+  const dataQuality = calculateDataQuality(places);
 
-    result =
-      await fetchOverpassData(
-        query
-      );
-
-  }
-
-  catch (error) {
-
-    const status =
-      error.response?.status;
-
-    if (status) {
-
-      throw new Error(
-        `Unable to retrieve OpenStreetMap data. All Overpass servers failed. Last HTTP status: ${status}.`
-      );
-    }
-
-    throw new Error(
-      `Unable to retrieve nearby businesses from OpenStreetMap: ${error.message}`
-    );
-  }
-
-  const places =
-    normalizeResults(
-      result.elements
-    );
-
-  const dataQuality =
-    calculateDataQuality(
-      places
-    );
-
-  const categoryCounts =
-    calculateCategoryCounts(
-      places
-    );
+  const categoryCounts = calculateCategoryCounts(places);
 
   const businessCategoryCounts =
-    calculateBusinessCategoryCounts(
-      places
-    );
+    calculateBusinessCategoryCounts(places);
 
-  places.dataQuality =
-    dataQuality;
+  places.dataQuality = dataQuality;
 
-  places.rawCount =
-    result.elements.length;
+  places.rawCount = result.elements.length;
 
-  places.normalizedCount =
-    places.length;
+  places.normalizedCount = places.length;
 
   places.queryMetadata = {
-
     latitude: lat,
-
     longitude: lon,
-
     radiusKm: radius,
-
     radiusMeters: radiusInMeters,
 
     category: "all",
 
-    source:
-      "OpenStreetMap",
+    source: "OpenStreetMap",
+    provider: "Overpass API",
 
-    provider:
-      "Overpass API",
+    endpoint: result.endpoint,
+    attempts: result.attempt,
 
-    endpoint:
-      result.endpoint,
-
-    attempts:
-      result.attempt,
-
-    retrievedAt:
-      new Date().toISOString(),
-
-    cached:
-      false,
+    retrievedAt: new Date().toISOString(),
+    cached: false,
 
     categoryCounts,
-
     businessCategoryCounts,
 
     osmCompletenessWarning:
-      "OSM data is crowdsourced and may not contain every real-world business.",
+      "OpenStreetMap is crowdsourced and may not contain every real-world business.",
   };
 
-  setCache(
-    cacheKey,
-    places
-  );
+  setCache(cacheKey, places);
 
-  logInfo(
-    `Final normalized places: ${places.length}`
-  );
-
-  logInfo(
-    `Businesses: ${dataQuality.businesses}`
-  );
+  logInfo(`Final normalized places: ${places.length}`);
+  logInfo(`Businesses: ${dataQuality.businesses}`);
 
   return places;
 }
-
 
 // ============================================================
 // CATEGORY-SPECIFIC SEARCH
@@ -2170,21 +1551,16 @@ async function getNearbyBusinessesByCategory(
   radiusInKm,
   category
 ) {
-
-  const input =
-    validateInput(
-      latitude,
-      longitude,
-      radiusInKm
-    );
+  const input = validateInput(
+    latitude,
+    longitude,
+    radiusInKm
+  );
 
   const normalizedCategory =
-    normalizeRequestedCategory(
-      category
-    );
+    normalizeRequestedCategory(category);
 
   if (!normalizedCategory) {
-
     throw new Error(
       `Unsupported category "${category}".`
     );
@@ -2196,24 +1572,18 @@ async function getNearbyBusinessesByCategory(
     radiusInKm: radius,
   } = input;
 
-  const radiusInMeters =
-    Math.round(
-      radius * 1000
-    );
+  const radiusInMeters = Math.round(radius * 1000);
 
-  const cacheKey =
-    createCacheKey(
-      lat,
-      lon,
-      radius,
-      normalizedCategory
-    );
+  const cacheKey = createCacheKey(
+    lat,
+    lon,
+    radius,
+    normalizedCategory
+  );
 
-  const cached =
-    getCache(cacheKey);
+  const cached = getCache(cacheKey);
 
   if (cached) {
-
     logInfo(
       `Returning cached ${normalizedCategory} results`
     );
@@ -2221,133 +1591,62 @@ async function getNearbyBusinessesByCategory(
     return cached;
   }
 
-  const query =
-    buildCategoryQuery(
-      normalizedCategory,
-      lat,
-      lon,
-      radiusInMeters
-    );
-
-  let result;
-
-  try {
-
-    result =
-      await fetchOverpassData(
-        query
-      );
-
-  }
-
-  catch (error) {
-
-    const status =
-      error.response?.status;
-
-    throw new Error(
-      status
-        ? `Unable to retrieve ${normalizedCategory} data. Overpass returned HTTP ${status} after fallback attempts.`
-        : `Unable to retrieve ${normalizedCategory} data: ${error.message}`
-    );
-  }
-
-  const places =
-    normalizeResults(
-      result.elements
-    );
-
-  const dataQuality =
-    calculateDataQuality(
-      places
-    );
-
-  const categoryCounts =
-    calculateCategoryCounts(
-      places
-    );
-
-  const businessCategoryCounts =
-    calculateBusinessCategoryCounts(
-      places
-    );
-
-  places.dataQuality =
-    dataQuality;
-
-  places.rawCount =
-    result.elements.length;
-
-  places.normalizedCount =
-    places.length;
-
-  places.queryMetadata = {
-
-    latitude: lat,
-
-    longitude: lon,
-
-    radiusKm: radius,
-
-    radiusMeters: radiusInMeters,
-
-    category:
-      normalizedCategory,
-
-    source:
-      "OpenStreetMap",
-
-    provider:
-      "Overpass API",
-
-    endpoint:
-      result.endpoint,
-
-    attempts:
-      result.attempt,
-
-    retrievedAt:
-      new Date().toISOString(),
-
-    cached:
-      false,
-
-    categoryCounts,
-
-    businessCategoryCounts,
-
-    osmCompletenessWarning:
-      "OSM data is crowdsourced and may not contain every real-world business.",
-  };
-
-  setCache(
-    cacheKey,
-    places
+  const query = buildCategoryQuery(
+    normalizedCategory,
+    lat,
+    lon,
+    radiusInMeters
   );
 
+  const result = await fetchOverpassData(query);
+
+  const places = normalizeResults(result.elements);
+
+  const dataQuality = calculateDataQuality(places);
+
+  places.dataQuality = dataQuality;
+
+  places.rawCount = result.elements.length;
+
+  places.normalizedCount = places.length;
+
+  places.queryMetadata = {
+    latitude: lat,
+    longitude: lon,
+    radiusKm: radius,
+    radiusMeters: radiusInMeters,
+
+    category: normalizedCategory,
+
+    source: "OpenStreetMap",
+    provider: "Overpass API",
+
+    endpoint: result.endpoint,
+    attempts: result.attempt,
+
+    retrievedAt: new Date().toISOString(),
+    cached: false,
+
+    categoryCounts: calculateCategoryCounts(places),
+
+    businessCategoryCounts:
+      calculateBusinessCategoryCounts(places),
+
+    osmCompletenessWarning:
+      "OpenStreetMap is crowdsourced and may not contain every real-world business.",
+  };
+
+  setCache(cacheKey, places);
+
   logInfo(
-    `${normalizedCategory}: ${places.length} results`
+    `${normalizedCategory}: ${places.length} normalized places`
   );
 
   return places;
 }
 
-
 // ============================================================
-// SEARCH MULTIPLE CATEGORIES
-// ============================================================
-//
-// Useful for BizLens analysis.
-//
-// Example:
-//
-// getNearbyBusinessesByCategories(
-//   16.70,
-//   74.24,
-//   3,
-//   ["restaurant", "cafe", "gym", "pharmacy"]
-// )
-//
+// MULTI-CATEGORY SEARCH
 // ============================================================
 
 async function getNearbyBusinessesByCategories(
@@ -2356,12 +1655,7 @@ async function getNearbyBusinessesByCategories(
   radiusInKm,
   categories = []
 ) {
-
-  if (
-    !Array.isArray(categories) ||
-    categories.length === 0
-  ) {
-
+  if (!Array.isArray(categories) || categories.length === 0) {
     return getNearbyBusinesses(
       latitude,
       longitude,
@@ -2369,190 +1663,134 @@ async function getNearbyBusinessesByCategories(
     );
   }
 
-  const uniqueCategories =
-    [
-      ...new Set(
-        categories
-          .map(
-            normalizeRequestedCategory
-          )
-          .filter(Boolean)
-      ),
-    ];
+  const input = validateInput(
+    latitude,
+    longitude,
+    radiusInKm
+  );
 
-  const results = [];
+  const uniqueCategories = [
+    ...new Set(
+      categories
+        .map(normalizeRequestedCategory)
+        .filter(Boolean)
+    ),
+  ].slice(0, MAX_CATEGORY_QUERIES);
 
-  for (
-    const category of
-    uniqueCategories
-  ) {
-
-    try {
-
-      const places =
-        await getNearbyBusinessesByCategory(
-          latitude,
-          longitude,
-          radiusInKm,
-          category
-        );
-
-      results.push(
-        ...places
-      );
-
-    }
-
-    catch (error) {
-
-      logWarn(
-        `Category "${category}" failed: ${error.message}`
-      );
-
-      // Continue other categories.
-    }
+  if (uniqueCategories.length === 0) {
+    throw new Error(
+      "No supported categories were provided."
+    );
   }
 
-  const places =
-    deduplicatePlaces(
-      results
-    );
+  const results = await Promise.all(
+    uniqueCategories.map(category =>
+      getNearbyBusinessesByCategory(
+        input.latitude,
+        input.longitude,
+        input.radiusInKm,
+        category
+      ).catch(error => {
+        logWarn(
+          `Category "${category}" failed: ${error.message}`
+        );
 
-  const dataQuality =
-    calculateDataQuality(
-      places
-    );
+        return [];
+      })
+  ));
 
-  const categoryCounts =
-    calculateCategoryCounts(
-      places
-    );
+  const combined = [];
 
-  const businessCategoryCounts =
-    calculateBusinessCategoryCounts(
-      places
-    );
+  for (const places of results) {
+    combined.push(...places);
+  }
 
-  places.dataQuality =
-    dataQuality;
+  const places = deduplicatePlaces(combined);
 
-  places.rawCount =
-    results.length;
+  places.dataQuality = calculateDataQuality(places);
 
-  places.normalizedCount =
-    places.length;
+  places.rawCount = combined.length;
+
+  places.normalizedCount = places.length;
 
   places.queryMetadata = {
+    latitude: input.latitude,
+    longitude: input.longitude,
+    radiusKm: input.radiusInKm,
 
-    latitude:
-      Number(latitude),
+    categories: uniqueCategories,
 
-    longitude:
-      Number(longitude),
+    source: "OpenStreetMap",
+    provider: "Overpass API",
 
-    radiusKm:
-      Number(radiusInKm),
+    retrievedAt: new Date().toISOString(),
 
-    categories:
-      uniqueCategories,
+    categoryCounts: calculateCategoryCounts(places),
 
-    source:
-      "OpenStreetMap",
-
-    provider:
-      "Overpass API",
-
-    retrievedAt:
-      new Date().toISOString(),
-
-    categoryCounts,
-
-    businessCategoryCounts,
+    businessCategoryCounts:
+      calculateBusinessCategoryCounts(places),
 
     osmCompletenessWarning:
-      "OSM data is crowdsourced and may not contain every real-world business.",
+      "OpenStreetMap is crowdsourced and may not contain every real-world business.",
   };
 
   return places;
 }
 
-
 // ============================================================
-// BUSINESS CATEGORY LIST
-// ============================================================
-
-function getSupportedCategories() {
-
-  return Object.keys(
-    CATEGORY_DEFINITIONS
-  );
-}
-
-
-// ============================================================
-// CACHE STATS
+// CACHE STATISTICS
 // ============================================================
 
 function getCacheStats() {
-
   return {
-    size:
-      cache.size,
-
-    maxEntries:
-      MAX_CACHE_ENTRIES,
-
-    ttlMs:
-      CACHE_TTL_MS,
+    size: cache.size,
+    maxEntries: MAX_CACHE_ENTRIES,
+    ttlMs: CACHE_TTL_MS,
   };
 }
 
+// ============================================================
+// SUPPORTED CATEGORIES
+// ============================================================
+
+function getSupportedCategories() {
+  return Object.keys(CATEGORY_DEFINITIONS);
+}
 
 // ============================================================
 // EXPORTS
 // ============================================================
 
 module.exports = {
-
   // Main APIs
   getNearbyBusinesses,
-
   getNearbyBusinessesByCategory,
-
   getNearbyBusinessesByCategories,
 
   // Query builders
   buildQuery,
-
   buildCategoryQuery,
 
   // Categories
   normalizeRequestedCategory,
-
   getSupportedCategories,
-
   CATEGORY_DEFINITIONS,
 
   // Normalization
   normalizeBusinessType,
-
   normalizeElement,
+  normalizeResults,
 
   isBusiness,
-
   isInfrastructure,
-
   determineObjectType,
 
   extractAddress,
-
   extractCoordinates,
 
   // Statistics
   calculateDataQuality,
-
   calculateCategoryCounts,
-
   calculateBusinessCategoryCounts,
 
   // Deduplication
@@ -2560,7 +1798,5 @@ module.exports = {
 
   // Cache
   clearCache,
-
   getCacheStats,
-
 };
