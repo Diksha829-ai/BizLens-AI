@@ -1178,11 +1178,6 @@ function buildQuery(
   const businessQuery = `
     nwr["shop"](around:${radius},${lat},${lon});
     nwr["amenity"~"restaurant|cafe|fast_food|food_court|bank|atm|pharmacy|hospital|clinic|doctors|dentist|school|college|university|fuel|marketplace|bus_station|taxi|parking|place_of_worship|kindergarten"](around:${radius},${lat},${lon});
-    nwr["office"](around:${radius},${lat},${lon});
-    nwr["craft"](around:${radius},${lat},${lon});
-    nwr["healthcare"](around:${radius},${lat},${lon});
-    nwr["tourism"~"hotel|hostel|guest_house|motel|attraction|museum|gallery"](around:${radius},${lat},${lon});
-    nwr["leisure"~"park|garden|fitness_centre|sports_centre|stadium"](around:${radius},${lat},${lon});
   `;
 
   const infrastructureQuery = `
