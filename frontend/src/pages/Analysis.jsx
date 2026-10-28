@@ -516,7 +516,8 @@ function Analysis() {
       // ------------------------------------------------------
       // SAVE RESULT
       // ------------------------------------------------------
-
+console.log("Full analysis data:", data.data);
+console.log("ML prediction:", data.data?.mlPrediction);
       setAnalysisData(data.data);
 
       localStorage.setItem(
