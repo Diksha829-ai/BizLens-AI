@@ -47,9 +47,19 @@ const OVERPASS_ENDPOINTS = [
 // CONFIGURATION
 // ============================================================
 
-const REQUEST_TIMEOUT = Number(process.env.OVERPASS_TIMEOUT || 15000);
-const MAX_RETRIES_PER_ENDPOINT = Number(process.env.OVERPASS_RETRIES || 1);
-const OVERPASS_TOTAL_TIMEOUT = Number(process.env.OVERPASS_TOTAL_TIMEOUT || 45000);
+const REQUEST_TIMEOUT = Number(
+  process.env.OVERPASS_TIMEOUT || 25000
+);
+
+const MAX_RETRIES_PER_ENDPOINT = Math.max(
+  1,
+  Number(process.env.OVERPASS_RETRIES || 1)
+);
+
+const OVERPASS_TOTAL_TIMEOUT = Number(
+  process.env.OVERPASS_TOTAL_TIMEOUT || 90000
+);
+
 
 const BASE_RETRY_DELAY =
   Number(process.env.OVERPASS_RETRY_DELAY || 1500);
@@ -1361,6 +1371,7 @@ async function requestOverpass(endpoint, query, timeoutMs) {
 async function fetchOverpassData(query) {
   let lastError = null;
   const deadline = Date.now() + OVERPASS_TOTAL_TIMEOUT;
+
   const maxAttempts = Math.max(
     1,
     Number(process.env.OVERPASS_RETRIES || 2)
@@ -1383,14 +1394,14 @@ async function fetchOverpassData(query) {
         );
       }
 
-      const timeoutMs = Math.max(
-        1000,
-        Math.min(REQUEST_TIMEOUT, remainingMs)
-      );
+      // Allow a slow endpoint up to 25 seconds per request,
+      // without exceeding the overall deadline.
+      const timeoutMs = Math.min(25000, remainingMs);
 
       try {
         logInfo(
-          `Requesting ${endpoint} - attempt ${attempt}/${maxAttempts}`
+          `Requesting ${endpoint} - attempt ${attempt}/${maxAttempts}, ` +
+          `timeout=${timeoutMs}ms`
         );
 
         const elements = await requestOverpass(
@@ -1425,7 +1436,6 @@ async function fetchOverpassData(query) {
           `message=${error.message}`
         );
 
-        // Move on quickly if the connection is refused or unreachable.
         const connectionUnavailable = [
           "ECONNREFUSED",
           "ENETUNREACH",
@@ -1467,6 +1477,7 @@ async function fetchOverpassData(query) {
 
   throw lastError || new Error("All Overpass servers failed.");
 }
+
 
 // ============================================================
 // GET NEARBY BUSINESSES
