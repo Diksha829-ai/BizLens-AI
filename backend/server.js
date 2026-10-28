@@ -140,6 +140,84 @@ app.get(
   }
 );
 
+/* TEMPORARY OVERPASS CONNECTIVITY TEST */
+app.get("/api/debug/overpass", async (req, res) => {
+  // Simple shared-secret protection. Set this in Render Environment.
+  const debugKey = process.env.OVERPASS_DEBUG_KEY;
+
+  if (!debugKey || req.query.key !== debugKey) {
+    return res.status(404).json({
+      success: false,
+      message: "Not found"
+    });
+  }
+
+  const query = `[out:json][timeout:25];
+nwr["amenity"="restaurant"](around:2000,16.7120318,74.2450472);
+out center tags;`;
+
+  const endpoints = [
+    "https://overpass.private.coffee/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+    "https://lz4.overpass-api.de/api/interpreter"
+  ];
+
+  const results = [];
+
+  for (const endpoint of endpoints) {
+    const started = Date.now();
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": "BizLensAI/1.0"
+        },
+        body: new URLSearchParams({ data: query }),
+        signal: AbortSignal.timeout(30000)
+      });
+
+      const body = await response.text();
+
+      results.push({
+        endpoint,
+        status: response.status,
+        elapsedMs: Date.now() - started,
+        preview: body.slice(0, 300)
+      });
+
+      if (response.ok) {
+        let elementCount = null;
+
+        try {
+          elementCount = JSON.parse(body).elements?.length ?? null;
+        } catch {}
+
+        return res.json({
+          success: true,
+          workingEndpoint: endpoint,
+          elementCount,
+          results
+        });
+      }
+    } catch (error) {
+      results.push({
+        endpoint,
+        error: error.name,
+        message: error.message,
+        elapsedMs: Date.now() - started
+      });
+    }
+  }
+
+  return res.status(502).json({
+    success: false,
+    message: "All tested Overpass endpoints failed",
+    results
+  });
+});
+
 // ============================================================
 // 404 ROUTE
 // ============================================================
