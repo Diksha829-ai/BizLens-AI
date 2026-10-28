@@ -21,43 +21,57 @@ const ML_SERVICE_URL =
   process.env.ML_SERVICE_URL ||
   "https://bizlens-ai-ml-service.onrender.com";
 
+
 const getMLPrediction = async ({
   latitude,
   longitude,
   category,
 }) => {
+  const startedAt = Date.now();
+  const url = `${ML_SERVICE_URL}/predict`;
+
   try {
+    console.log("[ML Client] Sending prediction request", {
+      url,
+      latitude,
+      longitude,
+      category,
+      timeoutMs: 30000,
+    });
+
     const response = await axios.post(
-      `${ML_SERVICE_URL}/predict`,
-      {
-        latitude,
-        longitude,
-        category,
-      },
-      {
-        timeout: 30000,
-      }
+      url,
+      { latitude, longitude, category },
+      { timeout: 30000 }
     );
+
+    console.log("[ML Client] Response received", {
+      status: response.status,
+      elapsedMs: Date.now() - startedAt,
+      success: response.data?.success,
+    });
 
     if (!response.data || !response.data.success) {
       console.error(
-        "ML service returned an unsuccessful response:",
+        "[ML Client] Unsuccessful response:",
         response.data
       );
-
       return null;
     }
 
     return response.data;
   } catch (error) {
-    console.error(
-      "ML service error:",
-      error.response?.data || error.message
-    );
+    console.error("[ML Client] Request failed", {
+      elapsedMs: Date.now() - startedAt,
+      code: error.code || "N/A",
+      message: error.message,
+      status: error.response?.status || null,
+    });
 
     return null;
   }
 };
+
 
 const CATEGORY_TAGS = {
   cafe: {
