@@ -1188,16 +1188,11 @@ function LocationSelection() {
             );
           },
 
-          {
-            enableHighAccuracy:
-              true,
-
-            timeout:
-              30000,
-
-            maximumAge:
-              0,
-          }
+         {
+  enableHighAccuracy: true,
+  timeout: 60000,
+  maximumAge: 0,
+}
         );
 
       // ---------------------------------------------
