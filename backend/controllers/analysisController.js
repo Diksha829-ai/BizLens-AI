@@ -41,37 +41,72 @@ const getMLPrediction = async ({
 
     const response = await axios.post(
       url,
-      { latitude, longitude, category },
-      { timeout: 30000 }
+      {
+        latitude: Number(latitude),
+        longitude: Number(longitude),
+        category,
+      },
+      {
+        timeout: 30000,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
     );
+
+    const result = response.data;
 
     console.log("[ML Client] Response received", {
       status: response.status,
       elapsedMs: Date.now() - startedAt,
-      success: response.data?.success,
+      success: result?.success,
+      predictionLabel: result?.prediction_label,
+      opportunityProbability: result?.opportunity_probability,
     });
 
-    if (!response.data || !response.data.success) {
+    if (
+      !result ||
+      result.success !== true ||
+      result.prediction_label == null ||
+      result.opportunity_probability == null
+    ) {
       console.error(
-        "[ML Client] Unsuccessful response:",
-        response.data
+        "[ML Client] Invalid ML response:",
+        result
       );
       return null;
     }
 
-    return response.data;
+    // Normalize the ML API's snake_case response into the
+    // camelCase fields expected by the frontend.
+    return {
+      prediction: result.prediction,
+      predictionLabel: result.prediction_label,
+      opportunityProbability: Number(
+        result.opportunity_probability
+      ),
+      lowerOpportunityProbability: Number(
+        result.lower_opportunity_probability
+      ),
+      geographicFeatures: result.geographic_features ?? null,
+      interpretation: result.interpretation ?? "",
+      location: result.location,
+      category: result.category,
+    };
   } catch (error) {
     console.error("[ML Client] Request failed", {
       elapsedMs: Date.now() - startedAt,
       code: error.code || "N/A",
       message: error.message,
-      status: error.response?.status || null,
+      status: error.response?.status ?? null,
+      responseBody: error.response?.data ?? null,
+      responseHeaders: error.response?.headers ?? null,
+      url,
     });
 
     return null;
   }
 };
-
 
 const CATEGORY_TAGS = {
   cafe: {
