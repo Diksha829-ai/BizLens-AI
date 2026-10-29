@@ -1326,7 +1326,7 @@ console.log("ML prediction:", data.data?.mlPrediction);
                 <div className="recommendations-header">
                   <div className="recommendation-ai-icon">🤖</div>
                   <div>
-                    <span className="section-label">AI INSIGHTS</span>
+                    <span className="section-label"></span>
                     <h2>Recommendations</h2>
                     <p>Actionable suggestions based on the analysis results.</p>
                   </div>
