@@ -1750,6 +1750,21 @@ const detectedCompetitors =
       (a, b) =>
         a.distance - b.distance
     );
+    console.log("[Competitor Debug]", {
+  parsedRadius,
+  detectedCompetitorsCount: detectedCompetitors.length,
+  competitorsWithDistanceCount:
+    competitorsWithDistance.length,
+  nearestCompetitor:
+    sortedCompetitors.length > 0
+      ? {
+          name: sortedCompetitors[0].name,
+          distance: sortedCompetitors[0].distance,
+          lat: sortedCompetitors[0].lat,
+          lon: sortedCompetitors[0].lon,
+        }
+      : null,
+});
 
     const nearestCompetitor =
       sortedCompetitors.length > 0
