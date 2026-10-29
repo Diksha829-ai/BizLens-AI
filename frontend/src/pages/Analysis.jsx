@@ -129,7 +129,17 @@ function Analysis() {
   // BUSINESS
   // ==========================================================
 
-  const [radius, setRadius] = useState(3);
+  const [radius, setRadius] = useState(() => {
+  const savedRadius =
+    localStorage.getItem("selectedRadius") ||
+    localStorage.getItem("analysisRadius");
+
+  const parsedRadius = Number(savedRadius);
+
+  return [1, 2, 3, 4, 5].includes(parsedRadius)
+    ? parsedRadius
+    : 3;
+});
   const [category, setCategory] = useState(null);
 
   // ==========================================================
@@ -278,10 +288,9 @@ function Analysis() {
           "selectedCategory"
         );
 
-      const savedRadius =
-        localStorage.getItem(
-          "analysisRadius"
-        );
+const savedRadius =
+  localStorage.getItem("selectedRadius") ||
+  localStorage.getItem("analysisRadius");
 
       console.log(
         "======================================"
@@ -367,15 +376,13 @@ function Analysis() {
       // ------------------------------------------------------
       // RADIUS
       // ------------------------------------------------------
+if (savedRadius !== null && savedRadius !== "") {
+  const parsedRadius = Number(savedRadius);
 
-      if (savedRadius) {
-        const parsedRadius =
-          Number(savedRadius);
-
-        if (!Number.isNaN(parsedRadius)) {
-          setRadius(parsedRadius);
-        }
-      }
+  if ([1, 2, 3, 4, 5].includes(parsedRadius)) {
+    setRadius(parsedRadius);
+  }
+}
 
     } catch (error) {
       console.error(
@@ -1012,7 +1019,9 @@ console.log("ML prediction:", data.data?.mlPrediction);
                     )
                   }
                 >
-
+                  <option value={1}>
+                1 km
+              </option>
                   <option value={2}>
                     2 km
                   </option>

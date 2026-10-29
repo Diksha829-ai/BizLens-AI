@@ -9,8 +9,17 @@ function AnalysisPreview() {
   const [location, setLocation] = useState(null);
   const [category, setCategory] = useState("");
   const [categoryName, setCategoryName] = useState("");
-  const [radius, setRadius] = useState(3);
+ const [radius, setRadius] = useState(() => {
+  const savedRadius =
+    localStorage.getItem("selectedRadius") ||
+    localStorage.getItem("analysisRadius");
 
+  const parsedRadius = Number(savedRadius);
+
+  return [1, 2, 3, 4, 5].includes(parsedRadius)
+    ? parsedRadius
+    : 3;
+});
   // ===================================================
   // CATEGORY INFORMATION
   // ===================================================
@@ -579,6 +588,9 @@ localStorage.setItem(
                 )
               }
             >
+              <option value={1}>
+                1 km
+              </option>
               <option value={2}>
                 2 km
               </option>
