@@ -1509,6 +1509,7 @@ async function getNearbyBusinesses(
     "all"
   );
 
+  // 1. Always prefer existing cached OSM data.
   const cached = getCache(cacheKey);
 
   if (cached) {
@@ -1522,8 +1523,27 @@ async function getNearbyBusinesses(
     radiusInMeters
   );
 
-  const result = await fetchOverpassData(query);
+  let result;
 
+  // 2. Fetch fresh data, but log failures clearly.
+  try {
+    result = await fetchOverpassData(query);
+  } catch (error) {
+    logWarn(
+      "Unable to retrieve fresh OpenStreetMap data. " +
+      `latitude=${lat}, longitude=${lon}, ` +
+      `radiusKm=${radius}, message=${error.message}`
+    );
+
+    // Do not invent businesses or return fake zero counts.
+    // Let the controller handle the unavailable-data condition.
+    throw new Error(
+      "OpenStreetMap data is temporarily unavailable. " +
+      "Please retry the analysis shortly."
+    );
+  }
+
+  // 3. Keep the existing normalization and scoring inputs.
   const places = normalizeResults(result.elements);
 
   const dataQuality = calculateDataQuality(places);
@@ -1534,9 +1554,7 @@ async function getNearbyBusinesses(
     calculateBusinessCategoryCounts(places);
 
   places.dataQuality = dataQuality;
-
   places.rawCount = result.elements.length;
-
   places.normalizedCount = places.length;
 
   places.queryMetadata = {
@@ -1563,6 +1581,7 @@ async function getNearbyBusinesses(
       "OpenStreetMap is crowdsourced and may not contain every real-world business.",
   };
 
+  // 4. Cache only successfully retrieved and normalized data.
   setCache(cacheKey, places);
 
   logInfo(`Final normalized places: ${places.length}`);
