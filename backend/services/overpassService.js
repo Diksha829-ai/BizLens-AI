@@ -129,6 +129,7 @@ function sleep(ms) {
 // CACHE HELPERS
 // ============================================================
 
+
 function getCache(key) {
   const entry = cache.get(key);
 
@@ -136,12 +137,49 @@ function getCache(key) {
     return null;
   }
 
+  // Return only fresh data through the normal cache path.
+  // Keep expired entries temporarily for outage fallback.
   if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
-    cache.delete(key);
     return null;
   }
 
   return entry.value;
+}
+
+
+function getStaleCache(key) {
+  const entry = cache.get(key);
+
+  if (!entry) {
+    return null;
+  }
+
+  // Do not use stale data if it is excessively old.
+  const MAX_STALE_AGE_MS = 24 * 60 * 60 * 1000;
+
+  const ageMs = Date.now() - entry.timestamp;
+
+  if (ageMs > CACHE_TTL_MS + MAX_STALE_AGE_MS) {
+    cache.delete(key);
+    return null;
+  }
+
+  // Return a copy so the cached original isn't modified.
+  const stalePlaces = [...entry.value];
+
+  Object.assign(stalePlaces, entry.value);
+
+  stalePlaces.queryMetadata = {
+    ...(entry.value.queryMetadata || {}),
+    cached: true,
+    stale: true,
+    cacheAgeMs: ageMs,
+    cacheWarning:
+      "Live OpenStreetMap data was unavailable. " +
+      "Showing previously cached data; verify before making decisions.",
+  };
+
+  return stalePlaces;
 }
 
 function setCache(key, value) {
@@ -1523,25 +1561,35 @@ async function getNearbyBusinesses(
     radiusInMeters
   );
 
-  let result;
+  
+let result;
 
-  // 2. Fetch fresh data, but log failures clearly.
-  try {
-    result = await fetchOverpassData(query);
-  } catch (error) {
+try {
+  result = await fetchOverpassData(query);
+} catch (error) {
+  logWarn(
+    "Fresh OpenStreetMap request failed: " +
+    error.message
+  );
+
+  // Try previously cached data for this exact location and radius.
+  const staleCached = getStaleCache(cacheKey);
+
+  if (staleCached) {
     logWarn(
-      "Unable to retrieve fresh OpenStreetMap data. " +
-      `latitude=${lat}, longitude=${lon}, ` +
-      `radiusKm=${radius}, message=${error.message}`
+      "Returning stale cached OSM data because live servers failed."
     );
 
-    // Do not invent businesses or return fake zero counts.
-    // Let the controller handle the unavailable-data condition.
-    throw new Error(
-      "OpenStreetMap data is temporarily unavailable. " +
-      "Please retry the analysis shortly."
-    );
+    return staleCached;
   }
+
+  // No suitable cached data exists.
+  throw new Error(
+    "OpenStreetMap is temporarily unavailable, and " +
+    "no usable cached data exists for this location. " +
+    "Please try again later."
+  );
+}
 
   // 3. Keep the existing normalization and scoring inputs.
   const places = normalizeResults(result.elements);
