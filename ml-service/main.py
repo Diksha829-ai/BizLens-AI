@@ -160,7 +160,23 @@ def health():
         "categories_supported": 42
     }
 
+CATEGORY_ALIASES = {
+    "medical store": "pharmacy",
+    "medical shop": "pharmacy",
+    "chemist": "pharmacy",
+    "drug store": "pharmacy",
+    "fast food": "fast_food",
+    "mobile store": "mobile_store",
+    "mobile repair": "mobile_repair",
+    "petrol pump": "petrol_pump",
+    "general store": "general_store",
+}
 
+
+def normalize_category(category: str) -> str:
+    normalized = str(category).strip().lower()
+    return CATEGORY_ALIASES.get(normalized, normalized)
+    
 # ============================================================
 # PREDICTION ENDPOINT
 # ============================================================
@@ -174,12 +190,33 @@ def predict(request: LocationRequest):
         # Generate geographic features
         # ----------------------------------------------------
 
-        features = generate_location_features(
-            request.latitude,
-            request.longitude,
-            request.category
-        )
+        normalized_category = normalize_category(
+    request.category
+)
 
+        features = generate_location_features(
+        request.latitude,
+        request.longitude,
+        normalized_category
+)
+
+        print(
+            "ML FEATURE DEBUG:",
+            {
+                "latitude": request.latitude,
+                "longitude": request.longitude,
+                "requested_category": request.category,
+                "normalized_category": normalized_category,
+                "pois_1km": features["pois_1km"],
+                "competitors_1km": features["competitors_1km"],
+                "category_poi_count": features["category_poi_count"],
+                "category_coverage_available":
+                    features["category_coverage_available"],
+                "nearest_competitor_m":
+                    features["nearest_competitor_m"],
+            },
+            flush=True,
+        )
         # ----------------------------------------------------
         # Convert to DataFrame
         # ----------------------------------------------------

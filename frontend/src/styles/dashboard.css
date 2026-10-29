@@ -4535,3 +4535,297 @@
   }
 
 }
+
+/* =====================================================
+   BIZLENS AI — DASHBOARD UI REFINEMENT
+   Add at the END of dashboard.css
+   ===================================================== */
+
+/* Main content spacing */
+.dashboard-main {
+  padding: 26px 30px 24px;
+}
+
+.dashboard-header {
+  margin-bottom: 22px;
+}
+
+.dashboard-section {
+  margin-top: 28px;
+  margin-bottom: 28px;
+}
+
+/* Compact premium hero */
+.analysis-hero {
+  min-height: 290px;
+  padding: 36px 42px;
+  border-radius: 22px;
+  box-shadow: 0 16px 38px rgba(37, 99, 235, 0.14);
+}
+
+.hero-content {
+  max-width: 620px;
+}
+
+.hero-content h2 {
+  font-size: clamp(32px, 3.2vw, 46px);
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+}
+
+.hero-content p {
+  margin-top: 14px;
+  margin-bottom: 20px;
+  max-width: 520px;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.hero-visual {
+  width: 36%;
+}
+
+.map-orb {
+  width: 205px;
+  height: 205px;
+}
+
+/* Cleaner workspace cards */
+.stats-grid {
+  gap: 16px;
+}
+
+.stats-grid .biz-stat-card {
+  min-height: 150px;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 5px 18px rgba(15, 23, 42, 0.035);
+}
+
+.stats-grid .biz-stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.07);
+}
+
+.stats-grid .stat-value {
+  font-size: 32px;
+  line-height: 1.15;
+}
+
+/* More consistent section headings */
+.section-heading h2,
+.recent-section-heading h2 {
+  font-size: 20px;
+  letter-spacing: -0.035em;
+}
+
+.section-heading p,
+.recent-section-heading p {
+  line-height: 1.55;
+}
+
+/* Compact recent analysis cards */
+.recent-analysis-list {
+  gap: 10px;
+}
+
+.recent-analysis-card {
+  grid-template-columns:
+    minmax(220px, 1.5fr)
+    minmax(145px, 1fr)
+    minmax(145px, 1fr)
+    auto;
+  gap: 16px;
+  min-height: 108px;
+  padding: 17px 19px;
+  border-radius: 14px;
+  box-shadow: 0 4px 15px rgba(15, 23, 42, 0.025);
+}
+
+.recent-analysis-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.recent-score-block {
+  padding: 10px 12px;
+}
+
+.recent-view-button {
+  min-width: 112px;
+  height: 40px;
+}
+
+/* Tighter analytics insight cards */
+.insights-grid {
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.insight-card {
+  min-height: 145px;
+  padding: 17px;
+  border-radius: 14px;
+  box-shadow: 0 4px 15px rgba(15, 23, 42, 0.025);
+}
+
+.insight-card:hover {
+  transform: translateY(-2px);
+}
+
+.insight-content strong {
+  font-size: 26px;
+}
+
+.risk-summary,
+.category-insights {
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.025);
+}
+
+/* Consistent sidebar */
+.sidebar-item {
+  min-height: 44px;
+  border-radius: 10px;
+}
+
+.sidebar-item.active {
+  background: #eff6ff;
+  border-color: #dbeafe;
+  box-shadow: inset 3px 0 0 #2563eb;
+}
+
+/* Accessible keyboard focus */
+.sidebar-item:focus-visible,
+.hero-button:focus-visible,
+.recent-view-button:focus-visible,
+.dashboard-link-button:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.4);
+  outline-offset: 3px;
+}
+
+/* Tablet */
+@media (max-width: 1050px) {
+  .dashboard-main {
+    padding: 24px;
+  }
+
+  .analysis-hero {
+    min-height: 270px;
+    padding: 30px;
+  }
+
+  .hero-content h2 {
+    font-size: clamp(30px, 3.5vw, 40px);
+  }
+
+  .recent-analysis-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 13px;
+  }
+
+  .recent-analysis-info {
+    grid-column: 1 / -1;
+  }
+
+  .recent-view-button {
+    width: 100%;
+  }
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .dashboard-main {
+    padding: 18px 14px;
+  }
+
+  .dashboard-section {
+    margin-top: 24px;
+    margin-bottom: 24px;
+  }
+
+  .analysis-hero {
+    min-height: auto;
+    padding: 27px 22px;
+    border-radius: 17px;
+  }
+
+  .hero-content {
+    width: 100%;
+  }
+
+  .hero-content h2 {
+    font-size: 30px;
+  }
+
+  .hero-visual {
+    display: none;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .stats-grid .biz-stat-card {
+    min-height: 135px;
+    padding: 15px;
+  }
+
+  .stats-grid .stat-value {
+    font-size: 27px;
+  }
+
+  .stats-grid .stat-description {
+    font-size: 11px;
+  }
+
+  .recent-analysis-card {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 15px;
+  }
+
+  .recent-analysis-info {
+    grid-column: auto;
+  }
+
+  .recent-view-button {
+    width: 100%;
+  }
+
+  .insights-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .insight-card {
+    min-height: 140px;
+    padding: 14px;
+  }
+
+  .insight-content strong {
+    font-size: 24px;
+  }
+
+  .risk-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .category-insights,
+  .risk-summary {
+    padding: 16px;
+  }
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-page *,
+  .dashboard-page *::before,
+  .dashboard-page *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
