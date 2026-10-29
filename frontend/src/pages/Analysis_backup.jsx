@@ -1649,13 +1649,13 @@ function Analysis() {
                   }
                 />
 
-                <AccessibilityItem
+                {/* <AccessibilityItem
                   icon="🚶"
                   label="Walkable Paths"
                   value={
                     accessibility?.walkable ?? 0
                   }
-                />
+                /> */}
 
               </div>
 

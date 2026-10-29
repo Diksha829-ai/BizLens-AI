@@ -1325,7 +1325,7 @@ console.log("ML prediction:", data.data?.mlPrediction);
                 <AccessibilityItem icon="🚌" label="Public Transport" value={accessibility?.transport ?? 0} />
                 <AccessibilityItem icon="🛣️" label="Road Access" value={accessibility?.roads ?? 0} />
                 <AccessibilityItem icon="🅿️" label="Parking" value={accessibility?.parking ?? 0} />
-                <AccessibilityItem icon="🚶" label="Walkable Paths" value={accessibility?.walkable ?? 0} />
+                {/* <AccessibilityItem icon="🚶" label="Walkable Paths" value={accessibility?.walkable ?? 0} /> */}
               </div>
             </div>
 
