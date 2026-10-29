@@ -732,7 +732,7 @@ localStorage.setItem(
               </div>
 
               <strong>
-                AI Recommendations
+                 Recommendations
               </strong>
 
               <span>

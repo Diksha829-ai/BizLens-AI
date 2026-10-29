@@ -123,7 +123,7 @@ function Register() {
             <div className="register-feature">
               <span>🤖</span>
               <div>
-                <strong>AI Recommendations</strong>
+                <strong>Recommendations</strong>
                 <small>
                   Get intelligent business recommendations.
                 </small>

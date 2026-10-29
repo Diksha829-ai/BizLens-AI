@@ -138,7 +138,7 @@ function Login() {
               <span>🤖</span>
               <div>
                 <strong>
-                  AI Recommendations
+                  Recommendations
                 </strong>
 
                 <small>
