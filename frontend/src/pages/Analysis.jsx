@@ -3,95 +3,31 @@ import {
   useNavigate,
   useSearchParams,
 } from "react-router-dom";
-
 import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Circle,
-  Popup,
-  useMap,
-} from "react-leaflet";
+  TrendingUp,
+  Store,
+  Bus,
+  Route,
+  SquareParking,
+  AlertCircle,
+  Sparkles,
+  Lightbulb,
+  CheckCircle,
+  MapPin,
+  Bot,
+} from "lucide-react";
 
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
+import BackButton from "../components/BackButton";
+import LoadingScreen from "../components/LoadingScreen";
+import CompetitorMap from "../components/CompetitorMap";
+import CompetitionCard from "../components/CompetitionCard";
+import DemandIndicatorCard from "../components/DemandIndicatorCard";
+import CompetitorList from "../components/CompetitorList";
 
 import "../styles/analysis.css";
 
 // Backend API base URL (production via VITE_API_URL, local fallback for development)
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-
-// ============================================================
-// FIX LEAFLET MARKER ICON
-// ============================================================
-
-delete L.Icon.Default.prototype._getIconUrl;
-
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-
-  iconUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-
-  shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-});
-
-// ============================================================
-// MAP UPDATER
-// ============================================================
-function MapUpdater({ latitude, longitude }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (latitude === null || longitude === null) {
-      return;
-    }
-
-    const updateMapSize = () => {
-      map.invalidateSize({
-        animate: false,
-        pan: false,
-      });
-
-      map.setView(
-        [latitude, longitude],
-        map.getZoom(),
-        {
-          animate: false,
-        }
-      );
-    };
-
-    // Initial update
-    updateMapSize();
-
-    // Watch the actual map container size.
-    const container = map.getContainer();
-
-    const resizeObserver = new ResizeObserver(() => {
-      updateMapSize();
-    });
-
-    resizeObserver.observe(container);
-
-    // Extra updates after layout/paint.
-    const timer1 = setTimeout(updateMapSize, 100);
-    const timer2 = setTimeout(updateMapSize, 300);
-    const timer3 = setTimeout(updateMapSize, 600);
-
-    return () => {
-      resizeObserver.disconnect();
-
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
-    };
-  }, [latitude, longitude, map]);
-
-  return null;
-}
 
 // ============================================================
 // CATEGORY NAMES
@@ -130,16 +66,16 @@ function Analysis() {
   // ==========================================================
 
   const [radius, setRadius] = useState(() => {
-  const savedRadius =
-    localStorage.getItem("selectedRadius") ||
-    localStorage.getItem("analysisRadius");
+    const savedRadius =
+      localStorage.getItem("selectedRadius") ||
+      localStorage.getItem("analysisRadius");
 
-  const parsedRadius = Number(savedRadius);
+    const parsedRadius = Number(savedRadius);
 
-  return [1, 2, 3, 4, 5].includes(parsedRadius)
-    ? parsedRadius
-    : 3;
-});
+    return [1, 2, 3, 4, 5].includes(parsedRadius)
+      ? parsedRadius
+      : 3;
+  });
   const [category, setCategory] = useState(null);
 
   // ==========================================================
@@ -147,7 +83,7 @@ function Analysis() {
   // ==========================================================
 
   const [analysisData, setAnalysisData] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(() => Boolean(savedId));
   const [error, setError] = useState("");
   // ==========================================================
   // LOAD SAVED DATA
@@ -582,7 +518,71 @@ console.log("ML prediction:", data.data?.mlPrediction);
   };
 
   // ==========================================================
-  // NO LOCATION / CATEGORY
+  // LOADING STATE
+  // ==========================================================
+
+  if (loading) {
+    return (
+      <div className="analysis-page">
+        <div style={{ padding: "20px 24px 0 24px", maxWidth: "1280px", margin: "0 auto", width: "100%" }}>
+          <BackButton fallback={savedId ? "/saved-analyses" : "/location-selection"} label={savedId ? "Back to Saved Analyses" : "Back to Selection"} />
+        </div>
+        <LoadingScreen
+          title="Analyzing Your Location..."
+          subtitle="Retrieving geographical insights, nearby competitors and business opportunity data."
+        />
+      </div>
+    );
+  }
+
+  // ==========================================================
+  // ERROR STATE (Analysis Not Found / API Failure)
+  // ==========================================================
+
+  if (error) {
+    return (
+      <div className="analysis-error-page">
+        <div className="analysis-error-card">
+          <div className="analysis-brand">
+            <div className="analysis-logo">
+              B
+            </div>
+            <div>
+              <strong>BizLens</strong>
+              <span>AI</span>
+            </div>
+          </div>
+
+          <div className="error-icon" style={{ display: "flex", justifyContent: "center", margin: "16px 0", color: "#dc2626" }}>
+            <AlertCircle size={48} />
+          </div>
+
+          <h1>
+            {savedId ? "Analysis Not Found" : "Unable to Load Analysis"}
+          </h1>
+
+          <p>
+            {error}
+          </p>
+
+          <div style={{ display: "flex", gap: "12px", justifyContent: "center", marginTop: "24px", flexWrap: "wrap" }}>
+            <BackButton fallback="/saved-analyses" label="Back to Saved Analyses" />
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard")}
+              className="analysis-primary-button"
+              style={{ minHeight: "40px", padding: "0 18px" }}
+            >
+              Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================================
+  // MISSING LOCATION OR CATEGORY (Direct visit without params)
   // ==========================================================
 
   if (
@@ -592,50 +592,41 @@ console.log("ML prediction:", data.data?.mlPrediction);
   ) {
     return (
       <div className="analysis-error-page">
-
         <div className="analysis-error-card">
-
           <div className="analysis-brand">
             <div className="analysis-logo">
               B
             </div>
-
             <div>
-              <strong>
-                BizLens
-              </strong>
-
-              <span>
-                AI
-              </span>
+              <strong>BizLens</strong>
+              <span>AI</span>
             </div>
           </div>
 
-          <div className="error-icon">
-            ⚠️
+          <div className="error-icon" style={{ display: "flex", justifyContent: "center", margin: "16px 0", color: "#f59e0b" }}>
+            <AlertCircle size={48} />
           </div>
 
           <h1>
-            Analysis Information Missing
+            Location & Category Required
           </h1>
 
           <p>
-            {error ||
-              "Loading selected analysis information..."}
+            Please choose a business category and location on the map to view intelligent location analysis.
           </p>
 
-          <button
-            type="button"
-            onClick={() =>
-              navigate("/dashboard")
-            }
-            className="analysis-primary-button"
-          >
-            ← Back to Dashboard
-          </button>
-
+          <div style={{ display: "flex", gap: "12px", justifyContent: "center", marginTop: "24px", flexWrap: "wrap" }}>
+            <BackButton fallback="/location-selection" label="Back to Location Selection" />
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard")}
+              className="analysis-primary-button"
+              style={{ minHeight: "40px", padding: "0 18px" }}
+            >
+              Dashboard
+            </button>
+          </div>
         </div>
-
       </div>
     );
   }
@@ -712,15 +703,23 @@ console.log("ML prediction:", data.data?.mlPrediction);
 
           </div>
 
-          <button
-            type="button"
-            className="back-dashboard-button"
-            onClick={() =>
-              navigate("/dashboard")
-            }
-          >
-            ← Dashboard
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <BackButton
+              fallback={savedId ? "/saved-analyses" : "/location-selection"}
+              label={savedId ? "Back to Saved Analyses" : "Back to Selection"}
+              style={{ marginBottom: 0 }}
+            />
+
+            <button
+              type="button"
+              className="back-dashboard-button"
+              onClick={() =>
+                navigate("/dashboard")
+              }
+            >
+              Dashboard
+            </button>
+          </div>
 
         </div>
 
@@ -850,123 +849,18 @@ console.log("ML prediction:", data.data?.mlPrediction);
 
 
         {/* ==================================================
-            MAP
+            COMPETITOR MAP
         ================================================== */}
 
-        <section className="analysis-card map-card">
-
-          <div className="card-header">
-
-            <div>
-
-              <span className="section-label">
-                GEOSPATIAL ANALYSIS
-              </span>
-
-              <h2>
-                Analysis Map
-              </h2>
-
-              <p>
-                Explore the selected location and
-                analysis radius.
-              </p>
-
-            </div>
-
-            <div className="map-radius-badge">
-              ◯ {radius} km radius
-            </div>
-
-          </div>
-
-          <div className="analysis-map-container">
-
-            <MapContainer
-              center={[
-                latitude,
-                longitude,
-              ]}
-              zoom={14}
-              scrollWheelZoom={true}
-              className="analysis-map"
-            >
-
-              <TileLayer
-                attribution="&copy; OpenStreetMap contributors"
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-
-              <MapUpdater
-                latitude={latitude}
-                longitude={longitude}
-              />
-
-              <Marker
-                position={[
-                  latitude,
-                  longitude,
-                ]}
-              >
-
-                <Popup>
-
-                  <strong>
-                    📍 Selected Business Location
-                  </strong>
-
-                  <br />
-
-                  {address}
-
-                  <br />
-                  <br />
-
-                  Business:{" "}
-                  {categoryDisplay}
-
-                  <br />
-
-                  Radius: {radius} km
-
-                </Popup>
-
-              </Marker>
-
-              <Circle
-                center={[
-                  latitude,
-                  longitude,
-                ]}
-                radius={
-                  Number(radius) * 1000
-                }
-                pathOptions={{
-                  fillOpacity: 0.15,
-                }}
-              />
-
-            </MapContainer>
-
-          </div>
-
-          <div className="map-footer">
-
-            <span>
-              📍 Selected location
-            </span>
-
-            <span>
-              ⭕ Analysis coverage area
-            </span>
-
-            <span>
-              🗺️ OpenStreetMap data
-            </span>
-
-          </div>
-
-        </section>
+        <CompetitorMap
+          latitude={latitude}
+          longitude={longitude}
+          address={address}
+          categoryDisplay={categoryDisplay}
+          radius={radius}
+          onRadiusChange={(newRadius) => setRadius(newRadius)}
+          competitors={analysisData?.competitorBusinesses || []}
+        />
 
 
         {/* ==================================================
@@ -1174,10 +1068,10 @@ console.log("ML prediction:", data.data?.mlPrediction);
 
             {/* GEOGRAPHIC SCORE CARDS */}
             <div className="result-score-grid">
-              <ScoreCard icon="📈" title="Demand Score" value={demand?.score ?? 0} type="demand" />
-              <ScoreCard icon="⚔️" title="Competition Score" value={competitors?.score ?? 0} type="competition" />
-              <ScoreCard icon="🚶" title="Accessibility Score" value={accessibility?.score ?? 0} type="accessibility" />
-              <ScoreCard icon="⚠️" title="Risk Score" value={risk?.score ?? 0} type="risk" />
+              <ScoreCard icon={<TrendingUp size={22} />} title="Demand Score" value={demand?.score ?? 0} type="demand" />
+              <ScoreCard icon={<Store size={22} />} title="Competition Score" value={competitors?.score ?? 0} type="competition" />
+              <ScoreCard icon={<Bus size={22} />} title="Accessibility Score" value={accessibility?.score ?? 0} type="accessibility" />
+              <ScoreCard icon={<AlertCircle size={22} />} title="Risk Score" value={risk?.score ?? 0} type="risk" />
             </div>
 
             {/* ML PREDICTION */}
@@ -1268,64 +1162,25 @@ console.log("ML prediction:", data.data?.mlPrediction);
               </div>
             )}
 
-            {/* COMPETITION + DEMAND */}
+            {/* COMPETITION + DEMAND INDICATORS */}
             <div className="result-two-column">
-              <div className="result-detail-card">
-                <div className="detail-card-header">
-                  <div className="detail-icon">⚔️</div>
-                  <div>
-                    <h3>Competition</h3>
-                    <span>Nearby business landscape</span>
-                  </div>
-                </div>
-                <div className="detail-stat-grid">
-                  <DetailStat label="Total Competitors" value={competitors?.count ?? 0} />
-                  <DetailStat label="Within 500m" value={competitors?.within500m ?? 0} />
-                  <DetailStat label="Within 1km" value={competitors?.within1km ?? 0} />
-                  <DetailStat label="Average Distance" value={competitors?.averageDistance ? `${competitors.averageDistance} km` : "N/A"} />
-                </div>
-                <div className="nearest-competitor">
-                  <span>Nearest Competitor</span>
-                  <strong>{competitors?.nearest?.name || "No nearby competitor found"}</strong>
-                </div>
-              </div>
-
-              <div className="result-detail-card">
-                <div className="detail-card-header">
-                  <div className="detail-icon demand-icon">📊</div>
-                  <div>
-                    <h3>Demand Indicators</h3>
-                    <span>Nearby demand-generating factors</span>
-                  </div>
-                </div>
-                <div className="indicator-grid">
-                  <Indicator icon="🎓" label="Education" value={demand?.education ?? 0} />
-                  <Indicator icon="🏢" label="Offices" value={demand?.offices ?? 0} />
-                  <Indicator icon="🏥" label="Hospitals" value={demand?.hospitals ?? 0} />
-                  <Indicator icon="🩺" label="Clinics" value={demand?.clinics ?? 0} />
-                  <Indicator icon="💊" label="Pharmacies" value={demand?.pharmacies ?? 0} />
-                  <Indicator icon="🛍️" label="Shopping" value={demand?.shopping ?? 0} />
-                  <Indicator icon="🚌" label="Transport" value={demand?.transport ?? 0} />
-                  <Indicator icon="🏛️" label="Tourism" value={demand?.tourism ?? 0} />
-                  <Indicator icon="🏠" label="Residential" value={demand?.residential ?? 0} />
-                </div>
-              </div>
+              <CompetitionCard competitors={competitors} />
+              <DemandIndicatorCard demand={demand} />
             </div>
 
             {/* ACCESSIBILITY */}
             <div className="result-detail-card full-detail-card">
               <div className="detail-card-header">
-                <div className="detail-icon accessibility-icon">🚦</div>
+                <div className="detail-icon accessibility-icon"><Bus size={20} /></div>
                 <div>
                   <h3>Accessibility</h3>
                   <span>How easy it is for customers to reach the location</span>
                 </div>
               </div>
               <div className="accessibility-grid">
-                <AccessibilityItem icon="🚌" label="Public Transport" value={accessibility?.transport ?? 0} />
-                <AccessibilityItem icon="🛣️" label="Road Access" value={accessibility?.roads ?? 0} />
-                <AccessibilityItem icon="🅿️" label="Parking" value={accessibility?.parking ?? 0} />
-                {/* <AccessibilityItem icon="🚶" label="Walkable Paths" value={accessibility?.walkable ?? 0} /> */}
+                <AccessibilityItem icon={<Bus size={18} />} label="Public Transport" value={accessibility?.transport ?? 0} />
+                <AccessibilityItem icon={<Route size={18} />} label="Road Access" value={accessibility?.roads ?? 0} />
+                <AccessibilityItem icon={<SquareParking size={18} />} label="Parking" value={accessibility?.parking ?? 0} />
               </div>
             </div>
 
@@ -1333,9 +1188,9 @@ console.log("ML prediction:", data.data?.mlPrediction);
             {analysisData?.recommendations?.length > 0 && (
               <div className="recommendations-card">
                 <div className="recommendations-header">
-                  <div className="recommendation-ai-icon">🤖</div>
+                  <div className="recommendation-ai-icon"><Lightbulb size={22} /></div>
                   <div>
-                    <span className="section-label"></span>
+                    <span className="section-label">STRATEGIC GUIDANCE</span>
                     <h2>Recommendations</h2>
                     <p>Actionable suggestions based on the analysis results.</p>
                   </div>
@@ -1359,35 +1214,8 @@ console.log("ML prediction:", data.data?.mlPrediction);
               </div>
             )}
 
-            {/* NEARBY COMPETITORS */}
-            {analysisData?.competitorBusinesses?.length > 0 && (
-              <div className="competitor-list-card">
-                <div className="detail-card-header">
-                  <div className="detail-icon">🏪</div>
-                  <div>
-                    <h3>Nearby Competitors</h3>
-                    <span>Businesses found around your selected location</span>
-                  </div>
-                </div>
-                <div className="competitor-table">
-                  <div className="competitor-table-header">
-                    <span>Business</span>
-                    <span>Category</span>
-                    <span>Distance</span>
-                  </div>
-                  {analysisData.competitorBusinesses.map((competitor, index) => (
-                    <div className="competitor-row" key={competitor.id || index}>
-                      <div className="competitor-name">
-                        <div className="competitor-avatar">🏪</div>
-                        <strong>{competitor.name}</strong>
-                      </div>
-                      <span className="competitor-category">{competitor.category}</span>
-                      <span className="competitor-distance">📍 {competitor.distance} km</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* NEARBY COMPETITORS LIST */}
+            <CompetitorList competitors={analysisData?.competitorBusinesses || []} />
 
           </section>
         )}

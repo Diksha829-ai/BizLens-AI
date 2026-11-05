@@ -19,6 +19,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 import { useNavigate } from "react-router-dom";
+import BackButton from "../components/BackButton";
 import "./../styles/location-selection.css";
 
 // =====================================================
@@ -1694,6 +1695,7 @@ function LocationSelection() {
       <main className="bizlens-content">
 
         <div className="bizlens-content-inner">
+          <BackButton fallback="/dashboard" label="Back to Dashboard" />
 
           {/* =================================================
               HEADER

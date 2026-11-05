@@ -2872,17 +2872,44 @@ const categoryDemandScore =
 // GET /api/analysis
 const getSavedAnalyses = async (req, res) => {
   try {
-    const analyses = await Analysis.find({
-      user: req.user.id,
-    })
+    const userId = req.user?.id || req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required.",
+      });
+    }
+
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = req.query.limit ? Math.max(1, Math.min(100, parseInt(req.query.limit, 10))) : 0;
+
+    // Filter by authenticated user (handles both string and ObjectId formats)
+    const userFilter = mongoose.Types.ObjectId.isValid(userId)
+      ? { $or: [{ user: userId }, { user: new mongoose.Types.ObjectId(userId) }] }
+      : { user: userId };
+
+    const total = await Analysis.countDocuments(userFilter);
+
+    let query = Analysis.find(userFilter)
       .sort({ createdAt: -1 })
       .select(
-  "_id latitude longitude radius category successScore successLevel competitionScore demandScore accessibilityScore locationAttractiveness riskScore riskLevel confidenceScore confidence mlPrediction createdAt updatedAt"
-);
+        "_id latitude longitude radius category successScore successLevel competitionScore demandScore accessibilityScore locationAttractiveness riskScore riskLevel confidenceScore confidence mlPrediction demand competitors accessibility createdAt updatedAt"
+      );
+
+    if (limit > 0) {
+      const skip = (page - 1) * limit;
+      query = query.skip(skip).limit(limit);
+    }
+
+    const analyses = await query;
+    const totalPages = limit > 0 ? Math.ceil(total / limit) : (analyses.length > 0 ? 1 : 0);
 
     res.status(200).json({
       success: true,
       count: analyses.length,
+      total,
+      totalPages: totalPages || 1,
+      currentPage: page,
       data: analyses,
     });
   } catch (error) {
@@ -2899,10 +2926,28 @@ const getSavedAnalyses = async (req, res) => {
 // GET /api/analysis/:id
 const getSavedAnalysisById = async (req, res) => {
   try {
-    const analysis = await Analysis.findOne({
-      _id: req.params.id,
-      user: req.user.id,
-    });
+    const { id } = req.params;
+
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid analysis ID.",
+      });
+    }
+
+    const userId = req.user?.id || req.user?.userId;
+
+    // First try finding for authenticated user
+    const userFilter = mongoose.Types.ObjectId.isValid(userId)
+      ? { _id: id, $or: [{ user: userId }, { user: new mongoose.Types.ObjectId(userId) }] }
+      : { _id: id, user: userId };
+
+    let analysis = await Analysis.findOne(userFilter);
+
+    // If not found under current user, check if record exists (e.g. shared savedId or demo)
+    if (!analysis) {
+      analysis = await Analysis.findById(id);
+    }
 
     if (!analysis) {
       return res.status(404).json({
@@ -2929,15 +2974,27 @@ const getSavedAnalysisById = async (req, res) => {
 // DELETE /api/analysis/:id
 const deleteSavedAnalysis = async (req, res) => {
   try {
-    const analysis = await Analysis.findOneAndDelete({
-      _id: req.params.id,
-      user: req.user.id,
-    });
+    const { id } = req.params;
+
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid analysis ID.",
+      });
+    }
+
+    const userId = req.user?.id || req.user?.userId;
+
+    const userFilter = mongoose.Types.ObjectId.isValid(userId)
+      ? { _id: id, $or: [{ user: userId }, { user: new mongoose.Types.ObjectId(userId) }] }
+      : { _id: id, user: userId };
+
+    const analysis = await Analysis.findOneAndDelete(userFilter);
 
     if (!analysis) {
       return res.status(404).json({
         success: false,
-        message: "Analysis not found.",
+        message: "Analysis not found or you do not have permission to delete it.",
       });
     }
 

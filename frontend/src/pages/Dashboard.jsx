@@ -1,5 +1,22 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  LayoutDashboard,
+  MapPin,
+  FolderOpen,
+  Scale,
+  Settings,
+  LogOut,
+  Sparkles,
+  BarChart3,
+  Building2,
+  Target,
+  TrendingUp,
+  TrendingDown,
+  Bot,
+  Store,
+} from "lucide-react";
+import BackButton from "../components/BackButton";
 
 import "../styles/dashboard.css";
 
@@ -324,7 +341,7 @@ const response = await fetch(
               navigate("/dashboard")
             }
           >
-            <span>📊</span>
+            <span><LayoutDashboard size={18} /></span>
             Dashboard
           </button>
 
@@ -335,7 +352,7 @@ const response = await fetch(
             type="button"
             onClick={handleNewAnalysis}
           >
-            <span>📍</span>
+            <span><MapPin size={18} /></span>
             New Analysis
           </button>
 
@@ -353,7 +370,7 @@ const response = await fetch(
   navigate("/saved-analyses");
 }}
           >
-            <span>📁</span>
+            <span><FolderOpen size={18} /></span>
             Saved Analyses
           </button>
 
@@ -371,7 +388,7 @@ const response = await fetch(
   navigate("/compare-businesses");
 }}
           >
-            <span>⚖️</span>
+            <span><Scale size={18} /></span>
             Compare Businesses
           </button>
 
@@ -421,6 +438,7 @@ const response = await fetch(
           ================================================= */}
 
       <main className="dashboard-main">
+        <BackButton fallback="/dashboard" hideIfNoHistory={true} label="Back to Previous Page" />
 
         {/* =================================================
             TOP BAR

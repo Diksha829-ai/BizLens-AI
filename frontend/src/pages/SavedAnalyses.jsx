@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { MapPin, BarChart3, Plus, Trash2, ExternalLink } from "lucide-react";
+import BackButton from "../components/BackButton";
+import Pagination from "../components/Pagination";
 import "./../styles/saved-analyses.css";
 
 const API_URL =
@@ -11,8 +14,12 @@ function SavedAnalyses() {
   const [analyses, setAnalyses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const pageSize = 10;
 
-  const fetchAnalyses = async () => {
+  const fetchAnalyses = async (page = 1) => {
     try {
       setLoading(true);
       setError("");
@@ -25,7 +32,7 @@ function SavedAnalyses() {
       }
 
       const response = await fetch(
-        `${API_URL}/api/analysis`,
+        `${API_URL}/api/analysis?page=${page}&limit=${pageSize}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -47,6 +54,9 @@ function SavedAnalyses() {
       }
 
       setAnalyses(data.data || []);
+      setTotalPages(data.totalPages || 1);
+      setTotalCount(data.total ?? (data.data ? data.data.length : 0));
+      setCurrentPage(data.currentPage || page);
     } catch (err) {
       console.error("Saved analyses error:", err);
       setError(err.message || "Unable to load saved analyses.");
@@ -56,7 +66,7 @@ function SavedAnalyses() {
   };
 
   useEffect(() => {
-    fetchAnalyses();
+    fetchAnalyses(1);
   }, []);
 
   const handleDelete = async (id) => {
@@ -85,9 +95,10 @@ function SavedAnalyses() {
         throw new Error(data.message || "Failed to delete analysis.");
       }
 
-      setAnalyses((prev) =>
-        prev.filter((analysis) => analysis._id !== id)
-      );
+      // If this was the last item on current page, go to previous page if page > 1
+      const remainingCount = analyses.length - 1;
+      const targetPage = remainingCount === 0 && currentPage > 1 ? currentPage - 1 : currentPage;
+      fetchAnalyses(targetPage);
     } catch (err) {
       console.error("Delete analysis error:", err);
       alert(err.message || "Unable to delete analysis.");
@@ -149,6 +160,7 @@ function SavedAnalyses() {
   return (
     <div className="saved-page">
       <div className="saved-container">
+        <BackButton fallback="/dashboard" label="Back to Dashboard" />
 
         {/* HEADER */}
         <div className="saved-header">
@@ -164,7 +176,7 @@ function SavedAnalyses() {
             className="new-analysis-btn"
             onClick={() => navigate("/location-selection")}
           >
-            + New Analysis
+            <Plus size={16} /> New Analysis
           </button>
         </div>
 
@@ -178,7 +190,9 @@ function SavedAnalyses() {
         {/* EMPTY STATE */}
         {!error && analyses.length === 0 && (
           <div className="saved-empty">
-            <div className="empty-icon">📊</div>
+            <div className="empty-icon">
+              <BarChart3 size={44} />
+            </div>
 
             <h2>No saved analyses yet</h2>
 
@@ -201,8 +215,8 @@ function SavedAnalyses() {
           <div className="saved-list">
 
             <div className="saved-count">
-              {analyses.length} saved{" "}
-              {analyses.length === 1 ? "analysis" : "analyses"}
+              {totalCount} saved{" "}
+              {totalCount === 1 ? "analysis" : "analyses"}
             </div>
 
             {analyses.map((analysis) => {
@@ -238,7 +252,8 @@ function SavedAnalyses() {
                       </div>
 
                       <div className="saved-location">
-                        📍 {Number(analysis.latitude).toFixed(6)},{" "}
+                        <MapPin size={14} style={{ display: "inline", verticalAlign: "middle", marginRight: "4px" }} />
+                        {Number(analysis.latitude).toFixed(6)},{" "}
                         {Number(analysis.longitude).toFixed(6)}
                       </div>
 
@@ -345,6 +360,16 @@ function SavedAnalyses() {
                 </div>
               );
             })}
+
+            {/* PAGINATION CONTROLS */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalCount}
+              itemsPerPage={pageSize}
+              onPageChange={(p) => fetchAnalyses(p)}
+              itemLabel="saved analyses"
+            />
           </div>
         )}
 

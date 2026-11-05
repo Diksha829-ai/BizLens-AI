@@ -11,6 +11,7 @@ import Analysis from "./pages/Analysis";
 import SavedAnalyses from "./pages/SavedAnalyses";
 import Settings from "./pages/Settings";
 import CompareBusinesses from "./pages/CompareBusinesses";
+import NotFound from "./pages/NotFound";
 
 // =====================================================
 // PROTECTED ROUTE
@@ -49,39 +50,14 @@ function App() {
 
   // ===================================================
   // SESSION INITIALIZATION
-  //
-  // A new browser tab/session starts logged out.
-  // Refreshing the same tab keeps the current login.
+  // Refreshing or opening direct URLs maintains login state
   // ===================================================
 
   const [sessionReady, setSessionReady] = useState(false);
 
   useEffect(() => {
-
-    const sessionStarted =
-      sessionStorage.getItem(
-        "bizlensSessionStarted"
-      );
-
-    // -----------------------------------------------
-    // NEW BROWSER SESSION
-    // -----------------------------------------------
-
-    if (!sessionStarted) {
-
-      // Clear previous login
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-
-      // Mark this browser tab/session as started
-      sessionStorage.setItem(
-        "bizlensSessionStarted",
-        "true"
-      );
-    }
-
+    // Preserve existing valid token across tabs
     setSessionReady(true);
-
   }, []);
 
 
@@ -200,32 +176,32 @@ function App() {
       />
 
 
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/compare-businesses"
+        element={
+          <ProtectedRoute>
+            <CompareBusinesses />
+          </ProtectedRoute>
+        }
+      />
+
       {/* =================================================
-          UNKNOWN ROUTE
+          UNKNOWN ROUTE (404 NOT FOUND)
           ================================================= */}
 
       <Route
         path="*"
-        element={
-          <Navigate to="/login" replace />
-        }
+        element={<NotFound />}
       />
-      <Route
-  path="/settings"
-  element={
-    <ProtectedRoute>
-      <Settings />
-    </ProtectedRoute>
-  }
-/>
-<Route
-  path="/compare-businesses"
-  element={
-    <ProtectedRoute>
-      <CompareBusinesses />
-    </ProtectedRoute>
-  }
-/>
 
     </Routes>
   );

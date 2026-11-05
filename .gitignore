@@ -58,3 +58,10 @@ ml-service/data/processed/
 # ML debugging scripts
 ml-service/check_holdout_probabilities.py
 ml-service/check_probability_distribution.py
+
+# Production environment files
+.env.production
+.env.*.local
+
+
+frontend/.env.production

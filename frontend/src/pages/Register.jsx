@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { User, Mail, Lock, Eye, EyeOff, MapPin, BarChart3, Sparkles } from "lucide-react";
+import BackButton from "../components/BackButton";
 
 import "../styles/register.css";
 
@@ -10,6 +12,7 @@ function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
 
@@ -101,7 +104,7 @@ function Register() {
           <div className="register-features">
 
             <div className="register-feature">
-              <span>📍</span>
+              <span><MapPin size={20} /></span>
               <div>
                 <strong>Location Intelligence</strong>
                 <small>
@@ -111,7 +114,7 @@ function Register() {
             </div>
 
             <div className="register-feature">
-              <span>📊</span>
+              <span><BarChart3 size={20} /></span>
               <div>
                 <strong>Data-Driven Insights</strong>
                 <small>
@@ -121,7 +124,7 @@ function Register() {
             </div>
 
             <div className="register-feature">
-              <span>🤖</span>
+              <span><Sparkles size={20} /></span>
               <div>
                 <strong>Recommendations</strong>
                 <small>
@@ -144,6 +147,7 @@ function Register() {
       <div className="register-form-section">
 
         <div className="register-form-card">
+          <BackButton fallback="/dashboard" label="Back to Dashboard" />
 
           <div className="register-mobile-logo">
 
@@ -195,7 +199,7 @@ function Register() {
               <div className="register-input-wrapper">
 
                 <span className="register-input-icon">
-                  👤
+                  <User size={18} />
                 </span>
 
                 <input
@@ -223,7 +227,7 @@ function Register() {
               <div className="register-input-wrapper">
 
                 <span className="register-input-icon">
-                  ✉️
+                  <Mail size={18} />
                 </span>
 
                 <input
@@ -251,12 +255,12 @@ function Register() {
               <div className="register-input-wrapper">
 
                 <span className="register-input-icon">
-                  🔒
+                  <Lock size={18} />
                 </span>
 
                 <input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Create a password"
                   value={password}
                   onChange={(e) =>
@@ -264,6 +268,17 @@ function Register() {
                   }
                   required
                 />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="biz-password-toggle-btn"
+                  style={{ position: "static", marginRight: "12px" }}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  title={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
 
               </div>
 

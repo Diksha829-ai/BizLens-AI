@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import PasswordInput from "../components/PasswordInput";
+import BackButton from "../components/BackButton";
 
 import "../styles/auth.css";
 
@@ -159,6 +161,7 @@ function Login() {
       <div className="auth-form-section">
 
         <div className="auth-form-container">
+          <BackButton fallback="/dashboard" label="Back to Dashboard" />
 
           {/* MOBILE LOGO */}
 
@@ -233,9 +236,8 @@ function Login() {
                 Password
               </label>
 
-              <input
+              <PasswordInput
                 id="password"
-                type="password"
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) =>
