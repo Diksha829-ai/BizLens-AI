@@ -1,6 +1,8 @@
 
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import BackButton from "../components/BackButton";
+import PasswordInput from "../components/PasswordInput";
 import "../styles/Settings.css";
 
 const API_URL = (
@@ -238,6 +240,8 @@ const Settings = () => {
 
       {/* MAIN CONTENT */}
       <main className="settings-main">
+        <BackButton fallback="/dashboard" label="Back to Dashboard" />
+
         <header className="settings-header">
           <div>
             <p className="settings-eyebrow">
@@ -386,9 +390,8 @@ const Settings = () => {
                 <label htmlFor="currentPassword">
                   Current Password
                 </label>
-                <input
+                <PasswordInput
                   id="currentPassword"
-                  type="password"
                   autoComplete="current-password"
                   value={currentPassword}
                   onChange={(e) =>
@@ -400,9 +403,8 @@ const Settings = () => {
 
               <div className="settings-field">
                 <label htmlFor="newPassword">New Password</label>
-                <input
+                <PasswordInput
                   id="newPassword"
-                  type="password"
                   autoComplete="new-password"
                   minLength={8}
                   value={newPassword}
@@ -416,9 +418,8 @@ const Settings = () => {
                 <label htmlFor="confirmPassword">
                   Confirm New Password
                 </label>
-                <input
+                <PasswordInput
                   id="confirmPassword"
-                  type="password"
                   autoComplete="new-password"
                   minLength={8}
                   value={confirmPassword}

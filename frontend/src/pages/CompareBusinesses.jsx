@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import BackButton from "../components/BackButton";
 
 // Backend API base URL (production via VITE_API_URL, local fallback for development)
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -300,6 +301,8 @@ const CompareBusinesses = () => {
           padding: "42px 0 70px",
         }}
       >
+        <BackButton fallback="/dashboard" label="Back to Dashboard" />
+
         <div style={{ marginBottom: "30px" }}>
           <p
             style={{

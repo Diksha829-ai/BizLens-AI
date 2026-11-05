@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import BackButton from "../components/BackButton";
 
 import "../styles/analysis-preview.css";
 
@@ -282,6 +283,7 @@ localStorage.setItem(
       ================================================= */}
 
       <main className="preview-main">
+        <BackButton fallback="/location-selection" label="Back to Location Selection" />
 
         {/* =================================================
             PAGE TITLE
