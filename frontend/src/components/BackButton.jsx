@@ -44,4 +44,8 @@ function BackButton({
   );
 }
 
+<<<<<<< HEAD
 export default BackButton;
+=======
+export default BackButton;
+>>>>>>> b2e1095 (Components added)

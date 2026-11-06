@@ -41,4 +41,8 @@ function AnalysisSkeleton() {
   );
 }
 
+<<<<<<< HEAD
 export default AnalysisSkeleton;
+=======
+export default AnalysisSkeleton;
+>>>>>>> b2e1095 (Components added)

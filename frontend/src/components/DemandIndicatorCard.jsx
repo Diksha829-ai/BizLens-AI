@@ -57,4 +57,8 @@ function DemandIndicatorCard({ demand }) {
   );
 }
 
+<<<<<<< HEAD
 export default DemandIndicatorCard;
+=======
+export default DemandIndicatorCard;
+>>>>>>> b2e1095 (Components added)

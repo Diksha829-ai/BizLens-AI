@@ -56,4 +56,8 @@ function PasswordInput({
   );
 }
 
+<<<<<<< HEAD
 export default PasswordInput;
+=======
+export default PasswordInput;
+>>>>>>> b2e1095 (Components added)

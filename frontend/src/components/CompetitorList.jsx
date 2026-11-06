@@ -99,4 +99,8 @@ function CompetitorList({ competitors = [] }) {
   );
 }
 
+<<<<<<< HEAD
 export default CompetitorList;
+=======
+export default CompetitorList;
+>>>>>>> b2e1095 (Components added)

@@ -22,4 +22,8 @@ function LoadingScreen({
   );
 }
 
+<<<<<<< HEAD
 export default LoadingScreen;
+=======
+export default LoadingScreen;
+>>>>>>> b2e1095 (Components added)

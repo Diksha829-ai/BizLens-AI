@@ -33,4 +33,8 @@ function NotFound() {
   );
 }
 
+<<<<<<< HEAD
 export default NotFound;
+=======
+export default NotFound;
+>>>>>>> b2e1095 (Components added)
