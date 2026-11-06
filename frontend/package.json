@@ -1,3 +1,4 @@
+
 {
   "name": "frontend",
   "private": true,
@@ -13,11 +14,7 @@
     "axios": "^1.19.0",
     "chart.js": "^4.5.1",
     "leaflet": "^1.9.4",
-<<<<<<< HEAD
-    "lucide-react": "^1.66.0",
-=======
     "lucide-react": "^1.70.0",
->>>>>>> b2e1095 (Components added)
     "react": "^19.2.8",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.8",

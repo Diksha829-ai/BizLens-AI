@@ -294,8 +294,4 @@ function CompetitorMap({
   );
 }
 
-<<<<<<< HEAD
 export default CompetitorMap;
-=======
-export default CompetitorMap;
->>>>>>> b2e1095 (Components added)

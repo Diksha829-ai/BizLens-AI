@@ -21,8 +21,4 @@ function MapLegend({ radius = 3, competitorCount = 0 }) {
   );
 }
 
-<<<<<<< HEAD
 export default MapLegend;
-=======
-export default MapLegend;
->>>>>>> b2e1095 (Components added)

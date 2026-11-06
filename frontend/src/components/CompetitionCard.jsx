@@ -63,8 +63,4 @@ function CompetitionCard({ competitors }) {
   );
 }
 
-<<<<<<< HEAD
 export default CompetitionCard;
-=======
-export default CompetitionCard;
->>>>>>> b2e1095 (Components added)

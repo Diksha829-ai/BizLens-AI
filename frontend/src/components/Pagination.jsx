@@ -74,8 +74,6 @@ function Pagination({
   );
 }
 
-<<<<<<< HEAD
+
+
 export default Pagination;
-=======
-export default Pagination;
->>>>>>> b2e1095 (Components added)
